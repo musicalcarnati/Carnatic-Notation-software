@@ -22,6 +22,9 @@ let cellSpeeds = [new Array(8).fill(1)];
 let cellNotes = [Array.from({length: 8}, () => [])];
 let internalCursorIndex = 0;
 
+// Global Clipboard Memory Buffer for Cell Copy/Paste Actions
+let internalCellClip = [];
+
 // Direct Extension Lookups matching your compressed directory structure
 const TanpuraFileExtensions = {
     'a': 'mp3', 'a-sharp': 'mp3', 'b': 'mp3', 'c': 'mp3', 'c-sharp': 'mp3',
@@ -513,6 +516,7 @@ window.addEventListener('keydown', (e) => {
 document.addEventListener("DOMContentLoaded", () => {
     if(document.getElementById('playerScreen')) buildWorkspaceDOM();
 });
+
 // Toggle logic for sideways animation transition
 function toggleCellActionsMenu() {
     const panel = document.getElementById('cellActionsPanel');
@@ -521,21 +525,40 @@ function toggleCellActionsMenu() {
     }
 }
 
-// Seamless clipboard handling for native UI copying actions
+// Fixed copy system that saves to both internal memory and native browser clipboard
 function copyCellContents() {
-    const textNode = document.getElementById(`s-${activeAvarthanamIndex}-${activeCellIndex}`);
-    if (!textNode) return;
+    if (!cellNotes[activeAvarthanamIndex] || !cellNotes[activeAvarthanamIndex][activeCellIndex]) return;
     
-    // Highlight text cleanly to utilize default system copy clip hooks
+    // Cache swarams locally so they survive focus changes safely
+    internalCellClip = [...cellNotes[activeAvarthanamIndex][activeCellIndex]];
+    
+    // Format text cleanly for external app pasting (documents, notepad etc.)
+    let rawContent = internalCellClip.join(" ");
+    
     textInputSelectionSync(activeAvarthanamIndex, activeCellIndex);
-    
     try {
-        // Direct write access to native device memory clipboard array
-        let rawContent = cellNotes[activeAvarthanamIndex][activeCellIndex].join(" ");
         navigator.clipboard.writeText(rawContent || "-");
         console.log("Cell content written directly to native clipboard buffer.");
     } catch (err) {
-        // Fallback execution for older browsers
         document.execCommand('copy');
     }
+}
+
+// Injects the cached clipboard arrays directly into the newly selected cell
+function pasteCellContents() {
+    if (!internalCellClip || internalCellClip.length === 0) return;
+    
+    let maxCap = getMaxCapacity(activeAvarthanamIndex, activeCellIndex);
+    
+    // Clamp values dynamically to match the active Nadai speed requirements
+    let parsedNotes = [...internalCellClip];
+    if (parsedNotes.length > maxCap) {
+        parsedNotes = parsedNotes.slice(0, maxCap);
+    }
+    
+    cellNotes[activeAvarthanamIndex][activeCellIndex] = parsedNotes;
+    
+    // Sync DOM changes and trigger visual selection highlight
+    buildWorkspaceDOM();
+    textInputSelectionSync(activeAvarthanamIndex, activeCellIndex);
 }
