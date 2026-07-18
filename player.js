@@ -28,25 +28,22 @@ let internalCellClip = [];
 // Dictionary for preloaded real instrument audio buffers
 const instrumentAudioBuffers = {};
 
-/* High-Quality Public Audio Sample Assets Configuration System
-   Maps anchor notes (S, P, S_high) to real acoustic web files. 
-   Intermediate frequencies (R, G, M, D, N) are microtonally pitch-bent live.
-*/
+/* Reliable, Publicly Accessible Instrument Assets (Wikimedia Commons stable paths) */
 const PREMIUM_SAMPLE_URLS = {
     veena: {
-        "S": "https://actions.google.com/sounds/v1/instruments/string_chord.ogg",
-        "P": "https://actions.google.com/sounds/v1/instruments/acoustic_guitar_strum.ogg",
-        "S_high": "https://actions.google.com/sounds/v1/instruments/quick_pizzicato_strings.ogg"
+        "S": "https://upload.wikimedia.org/wikipedia/commons/4/46/A_major_guitarchord.ogg",
+        "P": "https://upload.wikimedia.org/wikipedia/commons/7/75/E_major_guitarchord.ogg",
+        "S_high": "https://upload.wikimedia.org/wikipedia/commons/9/91/D_major_guitarchord.ogg"
     },
     flute: {
-        "S": "https://actions.google.com/sounds/v1/ambient/flute_glissando.ogg",
-        "P": "https://actions.google.com/sounds/v1/ambient/flute_glissando.ogg",
-        "S_high": "https://actions.google.com/sounds/v1/ambient/flute_glissando.ogg"
+        "S": "https://upload.wikimedia.org/wikipedia/commons/3/30/Flute_c4.ogg",
+        "P": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Flute_g4.ogg",
+        "S_high": "https://upload.wikimedia.org/wikipedia/commons/d/da/Flute_c5.ogg"
     },
     piano: {
-        "S": "https://actions.google.com/sounds/v1/instruments/piano_mood.ogg",
-        "P": "https://actions.google.com/sounds/v1/instruments/grand_piano_staccato_chord.ogg",
-        "S_high": "https://actions.google.com/sounds/v1/instruments/warm_piano_staccato.ogg"
+        "S": "https://upload.wikimedia.org/wikipedia/commons/f/f5/A440_piano.ogg",
+        "P": "https://upload.wikimedia.org/wikipedia/commons/5/5f/Piano_E4.ogg",
+        "S_high": "https://upload.wikimedia.org/wikipedia/commons/b/b3/Piano_A5.ogg"
     }
 };
 
@@ -176,7 +173,7 @@ function initAudioContext() {
     preloadInstrumentSamples();
 }
 
-// Asynchronously pre-fetches high-quality instrument buffers from network URLs
+// Safe asynchronous loader with detailed fallbacks
 async function preloadInstrumentSamples() {
     for (const inst in PREMIUM_SAMPLE_URLS) {
         if (!instrumentAudioBuffers[inst]) {
@@ -184,12 +181,19 @@ async function preloadInstrumentSamples() {
             for (const key in PREMIUM_SAMPLE_URLS[inst]) {
                 try {
                     const response = await fetch(PREMIUM_SAMPLE_URLS[inst][key]);
+                    if (!response.ok) throw new Error(`HTTP status ${response.status}`);
                     const arrayBuffer = await response.arrayBuffer();
-                    audioCtx.decodeAudioData(arrayBuffer, (decodedData) => {
-                        instrumentAudioBuffers[inst][key] = decodedData;
-                    });
+                    
+                    audioCtx.decodeAudioData(arrayBuffer, 
+                        (decodedData) => {
+                            instrumentAudioBuffers[inst][key] = decodedData;
+                        },
+                        (err) => {
+                            console.warn(`Decoding failed safely for ${inst}-${key}:`, err);
+                        }
+                    );
                 } catch (e) {
-                    console.error("Error downloading premium sample layers:", e);
+                    console.warn(`Could not preload network audio file for [${inst} - ${key}]. Engine will smoothly fall back to synth wave.`, e.message);
                 }
             }
         }
@@ -239,7 +243,6 @@ function getMaxCapacity(avarthanamIdx, cellIdx) {
     return baseNadai * cellSpeeds[avarthanamIdx][cellIdx];
 }
 
-// Rigid Truncation Logic when Switching Settings
 function enforceNadaiLimitsAllCells() {
     for (let a = 0; a < avarthanamsCount; a++) {
         for (let i = 0; i < totalBeatsPerCycle; i++) {
@@ -312,7 +315,6 @@ function renderCellText(a, idx) {
     inputElement.innerText = notesArr.join(" ");
 }
 
-// Deep Browser Textarea Synchronization (Enables Copying to External Files cleanly)
 function textInputSelectionSync(a, i) {
     renderCellText(a, i);
     const target = document.getElementById(`s-${a}-${i}`);
@@ -417,7 +419,6 @@ function getNoteFreq(swaraChar) {
     return base * ratio;
 }
 
-// Playback Engine utilizing real acoustic samples and dynamic playback rates
 function executeSynthTone(swaraString, nextSwaraString, duration) {
     if (!swaraString || swaraString.startsWith(',')) return;
     
@@ -428,7 +429,6 @@ function executeSynthTone(swaraString, nextSwaraString, duration) {
     let targetFreq = getNoteFreq(swaraString);
     if (targetFreq === 0) return;
 
-    // Determine the optimal source sample anchor string (Sa, Pa, or High Sa)
     let sampleKey = "S";
     let anchorFreq = getNoteFreq(swaraString.includes('̣') ? "Ṣ" : (swaraString.includes('̇') ? "Ṡ" : "S"));
     
@@ -440,7 +440,7 @@ function executeSynthTone(swaraString, nextSwaraString, duration) {
         anchorFreq = getNoteFreq("Ṡ");
     }
 
-    // Fallback to oscillator if samples haven't completely loaded over internet yet
+    // SAFE SEAMLESS FALLBACK: If samples aren't loaded or failed, play smooth oscillator waves
     if (!instrumentAudioBuffers[type] || !instrumentAudioBuffers[type][sampleKey]) {
         const fallbackOsc = audioCtx.createOscillator();
         const fallbackGain = audioCtx.createGain();
@@ -450,6 +450,8 @@ function executeSynthTone(swaraString, nextSwaraString, duration) {
         fallbackGain.gain.exponentialRampToValueAtTime(0.00001, now + duration);
         fallbackOsc.connect(fallbackGain);
         fallbackGain.connect(audioCtx.destination);
+        
+        activeOscillators.push(fallbackOsc);
         fallbackOsc.start(now);
         fallbackOsc.stop(now + duration);
         return;
@@ -460,11 +462,9 @@ function executeSynthTone(swaraString, nextSwaraString, duration) {
     
     sampleSource.buffer = instrumentAudioBuffers[type][sampleKey];
     
-    // Calculate precise microtonal transposition factor relative to the base sample string file
     let playbackRateValue = targetFreq / anchorFreq;
     sampleSource.playbackRate.setValueAtTime(playbackRateValue, now);
 
-    // Apply Gamakam Modulations directly to the sample playback rates
     if (swaraString.includes('/') || swaraString.includes('\\')) {
         let endFreq = (nextSwaraString && nextSwaraString !== ',') ? getNoteFreq(nextSwaraString) : targetFreq * 1.2;
         sampleSource.playbackRate.linearRampToValueAtTime(endFreq / anchorFreq, now + duration);
@@ -566,18 +566,18 @@ if(bA) bA.onclick = () => setOct('above');
 
 // Modern Event Binding Architecture
 window.addEventListener('keydown', (e) => {
-    if(!document.getElementById('playerScreen')?.classList.contains('active')) return;
-    if(document.activeElement.classList.contains('lyrics-input')) return;
-    
-    // Explicit interception rule to completely kill Ctrl+N browser collision
+    // Intercept Ctrl+N / Cmd+N at the VERY TOP so network dropouts cannot freeze it
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
         e.preventDefault();
-        initAudioContext();
+        try { initAudioContext(); } catch(err){}
         handleInput('Ṇ');
         return;
     }
+
+    if(!document.getElementById('playerScreen')?.classList.contains('active')) return;
+    if(document.activeElement.classList.contains('lyrics-input')) return;
     
-    initAudioContext();
+    try { initAudioContext(); } catch(err){}
     
     if (e.key === 'Delete') { clearActiveCell(); e.preventDefault(); return; }
     if (e.key === 'Backspace') { handleBackspace(); e.preventDefault(); return; }
