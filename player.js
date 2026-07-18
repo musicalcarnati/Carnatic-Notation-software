@@ -1,5 +1,5 @@
 /* ==========================================================================
-   RT Notation Software - Playback, Web Audio, & Carnatic Engine
+   RT Notation Software - Playback, Web Audio, & Carnatic Engine Engine
    ========================================================================== */
 
 let audioCtx = null;
@@ -9,7 +9,6 @@ let activeCellIndex = 0;
 let activeOscillators = [];
 let playbackRunning = false;
 let stopPlaybackFlag = false;
-let copiedCellData = null; // Clipboard memory for cell duplication
 
 // Tanpura Audio Node Tracking Elements
 let tanpuraAudioElement = null;
@@ -57,65 +56,41 @@ const melakartaNames = [
     "Sucharithra", "Jyōthishvancerūpi", "Dhāthuvardhani", "Nāsikābhūṣaṇi", "Kōsalam", "Rasikapriyā"
 ];
 
-// Algorithmic 72 Melakarta Swara Combinations Array Generator
 function generate72Melakartas() {
     const list = [];
-    const rgPairs = [
-        {r:"R1", g:"G1"}, {r:"R1", g:"G2"}, {r:"R1", g:"G3"},
-        {r:"R2", g:"G2"}, {r:"R2", g:"G3"}, {r:"R3", g:"G3"}
-    ];
-    const dnPairs = [
-        {d:"D1", n:"N1"}, {d:"D1", n:"N2"}, {d:"D1", n:"N3"},
-        {d:"D2", n:"N2"}, {d:"D2", n:"N3"}, {d:"D3", n:"N3"}
-    ];
-
+    const rgPairs = [{r:"R1", g:"G1"}, {r:"R1", g:"G2"}, {r:"R1", g:"G3"}, {r:"R2", g:"G2"}, {r:"R2", g:"G3"}, {r:"R3", g:"G3"}];
+    const dnPairs = [{d:"D1", n:"N1"}, {d:"D1", n:"N2"}, {d:"D1", n:"N3"}, {d:"D2", n:"N2"}, {d:"D2", n:"N3"}, {d:"D3", n:"N3"}];
     for (let i = 0; i < 72; i++) {
-        const mIdx = i < 36 ? 0 : 1; // 1-36 M1, 37-72 M2
-        const rgIdx = Math.floor((i % 36) / 6);
-        const dnIdx = i % 6;
-
-        list.push({
-            id: i + 1,
-            name: melakartaNames[i],
-            r: rgPairs[rgIdx].r,
-            g: rgPairs[rgIdx].g,
-            m: mIdx === 0 ? "M1" : "M2",
-            d: dnPairs[dnIdx].d,
-            n: dnPairs[dnIdx].n
-        });
+        const mIdx = i < 36 ? 0 : 1;
+        const rgIdx = Math.floor((i % 36) / 6); const dnIdx = i % 6;
+        list.push({ id: i + 1, name: melakartaNames[i], r: rgPairs[rgIdx].r, g: rgPairs[rgIdx].g, m: mIdx === 0 ? "M1" : "M2", d: dnPairs[dnIdx].d, n: dnPairs[dnIdx].n });
     }
     return list;
 }
 const melakartaTableSource = generate72Melakartas();
 
-// Restoring the Detailed Thāḷam System Metrics Setup
 const ThalamDefinitions = {
     'adi': { name: "Ādi Thāḷam (8 Beats - 4+2+2)", beats: 8 },
-    "dhruva": { name: "Dhruva Thāḷam (14 Beats - 4+2+4+4)", beats: 14 },
-    "matya": { name: "Matya Thāḷam (10 Beats - 4+2+4)", beats: 10 },
-    "rupaka": { name: "Rūpaka Thāḷam (6 Beats - 2+4)", beats: 6 },
-    "jhampa": { name: "Jhampa Thāḷam (10 Beats - 7+1+2)", beats: 10 },
-    "triputa": { name: "Triputa Thāḷam (7 Beats - 3+2+2)", beats: 7 },
-    "ata": { name: "Aṭa Thāḷam (14 Beats - 5+5+2+2)", beats: 14 },
-    "eka": { name: "Eka Thāḷam (4 Beats - 4)", beats: 4 }
+    'dhruva': { name: "Dhruva Thāḷam (14 Beats)", beats: 14 },
+    'matya': { name: "Matya Thāḷam (10 Beats)", beats: 10 },
+    'rupaka': { name: "Rūpaka Thāḷam (6 Beats - 2+4)", beats: 6 },
+    'jhampa': { name: "Jhampa Thāḷam (10 Beats)", beats: 10 },
+    'triputa': { name: "Triputa Thāḷam (7 Beats)", beats: 7 },
+    'ata': { name: "Aṭa Thāḷam (14 Beats)", beats: 14 },
+    'eka': { name: "Eka Thāḷam (4 Beats)", beats: 4 },
+    'khandachapu': { name: "Khaṇḍa Chāpu (5 Beats - 2+3)", beats: 5 },
+    'mishrachapu': { name: "Miśra Chāpu (7 Beats - 3+2+2)", beats: 7 },
+    'rupakachapu': { name: "Rūpaka Chāpu (6 Beats - 3+3)", beats: 6 }
 };
 
-// UI Navigation Matrix
 function navigateTo(screenId) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(screenId).classList.add('active');
-    if (screenId === 'playerScreen') {
-        buildWorkspaceDOM();
-    }
+    if (screenId === 'playerScreen') buildWorkspaceDOM();
 }
 
-function toggleMenu(id) {
-    document.getElementById(id).classList.toggle('open');
-}
-
-function changeFont(font) {
-    document.documentElement.style.setProperty('--font-family', font);
-}
+function toggleMenu(id) { document.getElementById(id).classList.toggle('open'); }
+function changeFont(font) { document.documentElement.style.setProperty('--font-family', font); }
 
 function changeTheme(theme) {
     const root = document.documentElement;
@@ -128,49 +103,28 @@ function changeTheme(theme) {
     } else if(theme === 'highcontrast') {
         root.style.setProperty('--bg-color', '#000000'); root.style.setProperty('--container-bg', '#000000');
         root.style.setProperty('--text-color', '#ffffff'); root.style.setProperty('--border-color', '#ffffff');
-    } else if(theme === 'cyberpunk') {
-        root.style.setProperty('--bg-color', '#1a0033'); root.style.setProperty('--container-bg', '#2d004d');
-        root.style.setProperty('--text-color', '#00ffcc'); root.style.setProperty('--border-color', '#ff007f');
-    } else if(theme === 'solarized') {
-        root.style.setProperty('--bg-color', '#fdf6e3'); root.style.setProperty('--container-bg', '#ffffff');
-        root.style.setProperty('--text-color', '#657b83'); root.style.setProperty('--border-color', '#93a1a1');
-    } else if(theme === 'forest') {
-        root.style.setProperty('--bg-color', '#1e2d24'); root.style.setProperty('--container-bg', '#2a3b30');
-        root.style.setProperty('--text-color', '#e1ecd7'); root.style.setProperty('--border-color', '#4e6e58');
-    } else if(theme === 'sepia') {
-        root.style.setProperty('--bg-color', '#704214'); root.style.setProperty('--container-bg', '#3d2314');
-        root.style.setProperty('--text-color', '#f4eedb'); root.style.setProperty('--border-color', '#a0522d');
-    } else if(theme === 'nord') {
-        root.style.setProperty('--bg-color', '#2e3440'); root.style.setProperty('--container-bg', '#3b4252');
-        root.style.setProperty('--text-color', '#d8dee9'); root.style.setProperty('--border-color', '#88c0d0');
-    } else if(theme === 'minimal') {
-        root.style.setProperty('--bg-color', '#f8f9fa'); root.style.setProperty('--container-bg', '#ffffff');
-        root.style.setProperty('--text-color', '#212529'); root.style.setProperty('--border-color', '#ced4da');
     } else {
         root.style.setProperty('--bg-color', '#f4f7f6'); root.style.setProperty('--container-bg', '#ffffff');
         root.style.setProperty('--text-color', '#333333'); root.style.setProperty('--border-color', '#dddddd');
     }
 }
 
-// Populate the Complete 72 Rāgams List Into Selection Form
+// Populate UI Lists Automatically
 const rSelect = document.getElementById('melakartaSelect');
 if (rSelect) {
     rSelect.innerHTML = "";
     melakartaTableSource.forEach(m => {
         let o = document.createElement('option'); o.value = m.id; o.innerText = `${m.id}. ${m.name}`;
-        if(m.id === 15) o.selected = true; 
-        rSelect.appendChild(o);
+        if(m.id === 15) o.selected = true; rSelect.appendChild(o);
     });
 }
 
-// Populate the Complete Restored Thāḷam Parameters System
 const tSelect = document.getElementById('thalaSelect');
 if (tSelect) {
     tSelect.innerHTML = "";
     Object.keys(ThalamDefinitions).forEach(key => {
         let o = document.createElement('option'); o.value = ThalamDefinitions[key].beats; o.innerText = ThalamDefinitions[key].name;
-        if(key === 'adi') o.selected = true;
-        tSelect.appendChild(o);
+        if(key === 'adi') o.selected = true; tSelect.appendChild(o);
     });
     tSelect.onchange = function() {
         totalBeatsPerCycle = parseInt(this.value);
@@ -180,74 +134,55 @@ if (tSelect) {
     };
 }
 
-// Audio System Initialization Engine
+const nSelect = document.getElementById('nadaiSelect');
+if (nSelect) {
+    nSelect.onchange = function() {
+        enforceNadaiLimitsAllCells();
+        buildWorkspaceDOM();
+    };
+}
+
 function initAudioContext() {
-    if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    }
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
 }
 
 function toggleTanpuraLayer() {
     initAudioContext();
-    const isChecked = document.getElementById('tanpuraToggle').checked;
-    if (isChecked) {
-        startTanpuraStream();
-    } else {
-        stopTanpuraStream();
-    }
+    if (document.getElementById('tanpuraToggle').checked) startTanpuraStream();
+    else stopTanpuraStream();
 }
 
 function startTanpuraStream() {
-    stopTanpuraStream(); 
-
+    stopTanpuraStream();
     const pitchSelect = document.getElementById('pitchSelect');
-    const activeOption = pitchSelect.options[pitchSelect.selectedIndex];
-    const pitchName = activeOption.getAttribute('data-name');
+    const pitchName = pitchSelect.options[pitchSelect.selectedIndex].getAttribute('data-name');
     const ext = TanpuraFileExtensions[pitchName] || 'mp3';
     
-    const filename = `${pitchName}-tanpura-thick.${ext}`;
-    tanpuraAudioElement = new Audio(filename);
+    tanpuraAudioElement = new Audio(`${pitchName}-tanpura-thick.${ext}`);
     tanpuraAudioElement.loop = true;
     tanpuraAudioElement.crossOrigin = "anonymous";
 
     tanpuraSourceNode = audioCtx.createMediaElementSource(tanpuraAudioElement);
     tanpuraGainNode = audioCtx.createGain();
-    
-    const currentVol = parseFloat(document.getElementById('tanpuraVol').value);
-    tanpuraGainNode.gain.setValueAtTime(currentVol, audioCtx.currentTime);
+    tanpuraGainNode.gain.setValueAtTime(parseFloat(document.getElementById('tanpuraVol').value), audioCtx.currentTime);
 
     tanpuraSourceNode.connect(tanpuraGainNode);
     tanpuraGainNode.connect(audioCtx.destination);
-
-    tanpuraAudioElement.play().catch(err => {
-        console.log("Interactivity block active.", err);
-    });
+    tanpuraAudioElement.play().catch(e => console.log("Interactivity blocker encountered.", e));
 }
 
 function stopTanpuraStream() {
-    if (tanpuraAudioElement) {
-        tanpuraAudioElement.pause();
-        tanpuraAudioElement = null;
-    }
-    if (tanpuraSourceNode) {
-        tanpuraSourceNode.disconnect();
-        tanpuraSourceNode = null;
-    }
+    if (tanpuraAudioElement) { tanpuraAudioElement.pause(); tanpuraAudioElement = null; }
+    if (tanpuraSourceNode) { tanpuraSourceNode.disconnect(); tanpuraSourceNode = null; }
 }
 
 function updateLiveTanpuraPitch() {
-    if (document.getElementById('tanpuraToggle') && document.getElementById('tanpuraToggle').checked) {
-        startTanpuraStream();
-    }
+    if (document.getElementById('tanpuraToggle')?.checked) startTanpuraStream();
 }
 
 function adjustTanpuraVolume(val) {
-    if (tanpuraGainNode && audioCtx) {
-        tanpuraGainNode.gain.setValueAtTime(parseFloat(val), audioCtx.currentTime);
-    }
+    if (tanpuraGainNode && audioCtx) tanpuraGainNode.gain.setValueAtTime(parseFloat(val), audioCtx.currentTime);
 }
 
 function getMaxCapacity(avarthanamIdx, cellIdx) {
@@ -255,21 +190,20 @@ function getMaxCapacity(avarthanamIdx, cellIdx) {
     return baseNadai * cellSpeeds[avarthanamIdx][cellIdx];
 }
 
-// Copy & Paste Execution Functions
-function copyCellContents() {
-    copiedCellData = {
-        notes: [...cellNotes[activeAvarthanamIndex][activeCellIndex]],
-        speed: cellSpeeds[activeAvarthanamIndex][activeCellIndex]
-    };
-    console.log("Cell data copied to software clipboard.");
-}
-
-function pasteCellContents() {
-    if (copiedCellData) {
-        cellNotes[activeAvarthanamIndex][activeCellIndex] = [...copiedCellData.notes];
-        cellSpeeds[activeAvarthanamIndex][activeCellIndex] = copiedCellData.speed;
-        internalCursorIndex = cellNotes[activeAvarthanamIndex][activeCellIndex].length;
-        buildWorkspaceDOM();
+// Rigid Truncation Logic when Switching Settings
+function enforceNadaiLimitsAllCells() {
+    for (let a = 0; a < avarthanamsCount; a++) {
+        for (let i = 0; i < totalBeatsPerCycle; i++) {
+            let maxCap = getMaxCapacity(a, i);
+            if (cellNotes[a][i].length > maxCap) {
+                cellNotes[a][i] = cellNotes[a][i].slice(0, maxCap);
+            }
+        }
+    }
+    if (cellNotes[activeAvarthanamIndex] && cellNotes[activeAvarthanamIndex][activeCellIndex]) {
+        if (internalCursorIndex > cellNotes[activeAvarthanamIndex][activeCellIndex].length) {
+            internalCursorIndex = cellNotes[activeAvarthanamIndex][activeCellIndex].length;
+        }
     }
 }
 
@@ -301,7 +235,9 @@ function buildWorkspaceDOM() {
             div.innerHTML = `
                 <span class="cell-number">${i + 1}</span>
                 <span class="cell-speed-indicator" id="speed-ind-${a}-${i}">${speedText}</span>
-                <div class="swaram-wrapper"><pre class="swaram-input" id="s-${a}-${i}">-</pre></div>
+                <div class="swaram-wrapper">
+                    <span class="swaram-input" id="s-${a}-${i}" contenteditable="true" spellcheck="false" onclick="event.stopPropagation();" onfocus="focusCell(${a}, ${i}); textInputSelectionSync(${a}, ${i});" onblur="saveExternalClipboardEdits(${a}, ${i})">-</span>
+                </div>
                 <input type="text" class="lyrics-input" placeholder="lyrics" onclick="event.stopPropagation();">`;
             gridContainer.appendChild(div);
         }
@@ -317,10 +253,6 @@ function focusCell(aIdx, cIdx) {
     activeAvarthanamIndex = aIdx; activeCellIndex = cIdx;
     let newCell = document.getElementById(`c-${activeAvarthanamIndex}-${activeCellIndex}`);
     if(newCell) newCell.classList.add('focused');
-    if (cellNotes[activeAvarthanamIndex] && cellNotes[activeAvarthanamIndex][activeCellIndex]) {
-        internalCursorIndex = cellNotes[activeAvarthanamIndex][activeCellIndex].length;
-    }
-    renderCellText(activeAvarthanamIndex, activeCellIndex);
 }
 
 function renderCellText(a, idx) {
@@ -328,10 +260,33 @@ function renderCellText(a, idx) {
     if (!inputElement || !cellNotes[a] || !cellNotes[a][idx]) return;
     let notesArr = [...cellNotes[a][idx]];
     if (notesArr.length === 0) { inputElement.innerText = "-"; return; }
-    if (a === activeAvarthanamIndex && idx === activeCellIndex && !playbackRunning) {
-        notesArr.splice(internalCursorIndex, 0, "|");
-    }
     inputElement.innerText = notesArr.join(" ");
+}
+
+// Deep Browser Textarea Synchronization (Enables Copying to External Files cleanly)
+function textInputSelectionSync(a, i) {
+    renderCellText(a, i);
+    const target = document.getElementById(`s-${a}-${i}`);
+    if (!target || cellNotes[a][i].length === 0) return;
+    
+    let range = document.createRange(); let sel = window.getSelection();
+    range.selectNodeContents(target);
+    sel.removeAllRanges(); sel.addRange(range);
+}
+
+function saveExternalClipboardEdits(a, i) {
+    const target = document.getElementById(`s-${a}-${i}`);
+    if (!target) return;
+    let cleanText = target.innerText.trim().replace(/[\s|]+/g, ' ');
+    if (cleanText === "" || cleanText === "-") {
+        cellNotes[a][i] = [];
+    } else {
+        let items = cleanText.split(' ');
+        let maxCap = getMaxCapacity(a, i);
+        if (items.length > maxCap) items = items.slice(0, maxCap);
+        cellNotes[a][i] = items;
+    }
+    renderCellText(a, i);
 }
 
 function handleInput(note) {
@@ -342,32 +297,36 @@ function handleInput(note) {
         if(activeOctave === 'below') formattedNote = note + "̣";
         if(activeOctave === 'above') formattedNote = note + "̇";
     }
-    cellNotes[activeAvarthanamIndex][activeCellIndex].splice(internalCursorIndex, 0, formattedNote);
-    internalCursorIndex++;
+    cellNotes[activeAvarthanamIndex][activeCellIndex].push(formattedNote);
     renderCellText(activeAvarthanamIndex, activeCellIndex);
+    textInputSelectionSync(activeAvarthanamIndex, activeCellIndex);
 }
 
 function applyGamakam(symbol) {
-    if (internalCursorIndex > 0) {
-        let targetIdx = internalCursorIndex - 1;
-        let targetNote = cellNotes[activeAvarthanamIndex][activeCellIndex][targetIdx];
+    let arr = cellNotes[activeAvarthanamIndex][activeCellIndex];
+    if (arr.length > 0) {
+        let lastIdx = arr.length - 1;
+        let targetNote = arr[lastIdx];
         if (!targetNote.includes('/') && !targetNote.includes('\\') && !targetNote.includes('~') && targetNote !== ',') {
-            cellNotes[activeAvarthanamIndex][activeCellIndex][targetIdx] = targetNote + symbol;
+            arr[lastIdx] = targetNote + symbol;
             renderCellText(activeAvarthanamIndex, activeCellIndex);
+            textInputSelectionSync(activeAvarthanamIndex, activeCellIndex);
         }
     }
 }
 
 function handleBackspace() {
-    if (internalCursorIndex > 0) {
-        cellNotes[activeAvarthanamIndex][activeCellIndex].splice(internalCursorIndex - 1, 1);
-        internalCursorIndex--;
+    let arr = cellNotes[activeAvarthanamIndex][activeCellIndex];
+    if (arr.length > 0) {
+        arr.pop();
         renderCellText(activeAvarthanamIndex, activeCellIndex);
+        textInputSelectionSync(activeAvarthanamIndex, activeCellIndex);
     }
 }
 
 function setSpeed(multiplier) {
     cellSpeeds[activeAvarthanamIndex][activeCellIndex] = multiplier;
+    enforceNadaiLimitsAllCells();
     buildWorkspaceDOM();
 }
 
@@ -384,7 +343,7 @@ if (document.getElementById('addAvarthanamBtn')) {
     };
 }
 
-function clearActiveCell() { cellNotes[activeAvarthanamIndex][activeCellIndex] = []; internalCursorIndex = 0; renderCellText(activeAvarthanamIndex, activeCellIndex); }
+function clearActiveCell() { cellNotes[activeAvarthanamIndex][activeCellIndex] = []; renderCellText(activeAvarthanamIndex, activeCellIndex); }
 function clearAllCells() { for(let a=0; a<avarthanamsCount; a++) { for(let i=0; i<totalBeatsPerCycle; i++) cellNotes[a][i] = []; } buildWorkspaceDOM(); }
 
 function getNoteFreq(swaraChar) {
@@ -409,6 +368,7 @@ function getNoteFreq(swaraChar) {
     return base * ratio;
 }
 
+// Microtonal Synth Pluck - shrieking background envelope removed entirely
 function executeSynthTone(swaraString, nextSwaraString, duration) {
     if (!swaraString || swaraString.startsWith(',')) return;
     
@@ -426,8 +386,10 @@ function executeSynthTone(swaraString, nextSwaraString, duration) {
     activeOscillators.push(mainOsc);
 
     mainOsc.type = (type === 'veena') ? 'triangle' : (type === 'flute' ? 'sine' : 'square');
+    
+    // Eliminates the resonance tail with an absolute volume truncation envelope
     mainGain.gain.setValueAtTime((type === 'piano' ? vol * 0.15 : vol * 0.4), now);
-    mainGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    mainGain.gain.exponentialRampToValueAtTime(0.00001, now + (duration * 0.95));
 
     mainOsc.frequency.setValueAtTime(startFreq, now);
 
@@ -468,34 +430,32 @@ async function runLoopSequence() {
     let bpm = parseInt(document.getElementById('tempo').value) || 80;
     let baseBeatLen = 60 / bpm;
 
-    for(let a=0; a<avarthanamsCount; a++) {
+    for(let a = 0; a < avarthanamsCount; a++) {
         if(stopPlaybackFlag) break;
-        for(let i=0; i<totalBeatsPerCycle; i++) {
+        for(let i = 0; i < totalBeatsPerCycle; i++) {
             if(stopPlaybackFlag) break;
             focusCell(a, i);
 
-            if(document.getElementById('metroToggle') && document.getElementById('metroToggle').checked) {
+            if(document.getElementById('metroToggle')?.checked) {
                 triggerMetronomeClick(audioCtx.currentTime);
             }
 
             let maxCap = getMaxCapacity(a, i);
             let executionNotes = [...cellNotes[a][i]];
+            // Pad out remaining un-filled space seamlessly with rhythmic pauses (commas)
             while(executionNotes.length < maxCap) executionNotes.push(',');
 
             let noteLen = baseBeatLen / maxCap;
 
             for(let nIdx = 0; nIdx < executionNotes.length; nIdx++) {
                 if(stopPlaybackFlag) break;
-                let currentSwara = executionNotes[nIdx];
-                let nextSwara = executionNotes[nIdx + 1] || null;
-                
-                executeSynthTone(currentSwara, nextSwara, noteLen);
+                executeSynthTone(executionNotes[nIdx], executionNotes[nIdx + 1] || null, noteLen);
                 await new Promise(r => setTimeout(r, noteLen * 1000));
             }
         }
     }
 
-    if(document.getElementById('repeatToggle') && document.getElementById('repeatToggle').checked && !stopPlaybackFlag) {
+    if(document.getElementById('repeatToggle')?.checked && !stopPlaybackFlag) {
         runLoopSequence();
     } else {
         playbackRunning = false;
@@ -526,57 +486,30 @@ if(bB) bB.onclick = () => setOct('below');
 if(bM) bM.onclick = () => setOct('middle'); 
 if(bA) bA.onclick = () => setOct('above');
 
-// Event Handlers for Keyboard Controls
+// Modern Event Binding Architecture
 window.addEventListener('keydown', (e) => {
-    if(!document.getElementById('playerScreen') || !document.getElementById('playerScreen').classList.contains('active')) return;
+    if(!document.getElementById('playerScreen')?.classList.contains('active')) return;
     if(document.activeElement.classList.contains('lyrics-input')) return;
     initAudioContext();
     
-    // Copy/Paste shortcuts tracking (Ctrl+C / Ctrl+V or Meta/Cmd)
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
-        copyCellContents(); e.preventDefault(); return;
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
-        pasteCellContents(); e.preventDefault(); return;
-    }
-
-    if (e.key === 'Backspace') { handleBackspace(); e.preventDefault(); return; }
+    // Explicit Delete Mapping requests
     if (e.key === 'Delete') { clearActiveCell(); e.preventDefault(); return; }
+    if (e.key === 'Backspace') { handleBackspace(); e.preventDefault(); return; }
     
-    if (e.key === 'ArrowLeft') {
-        if (internalCursorIndex > 0) { internalCursorIndex--; renderCellText(activeAvarthanamIndex, activeCellIndex); }
-        else if (activeCellIndex > 0) { focusCell(activeAvarthanamIndex, activeCellIndex - 1); }
-        e.preventDefault(); return;
-    }
-    if (e.key === 'ArrowRight') {
-        if (internalCursorIndex < cellNotes[activeAvarthanamIndex][activeCellIndex].length) { internalCursorIndex++; renderCellText(activeAvarthanamIndex, activeCellIndex); }
-        else if (activeCellIndex < totalBeatsPerCycle - 1) { focusCell(activeAvarthanamIndex, activeCellIndex + 1); }
-        e.preventDefault(); return;
-    }
-
-    // Direct Character Typing for Gamakams via keyboard buttons
-    if (e.key === '/' || e.key === '\\' || e.key === '~') {
-        applyGamakam(e.key); e.preventDefault(); return;
-    }
+    if (e.key === '/' || e.key === '\\' || e.key === '~') { applyGamakam(e.key); e.preventDefault(); return; }
 
     let k = e.key.toUpperCase();
     if(['S','R','G','M','P','D','N',','].includes(k)) {
-        // Intercepting modifiers natively for seamless octave transitions
         let originalOctave = activeOctave;
-        if (e.shiftKey) {
-            activeOctave = 'above';
-        } else if (e.ctrlKey || e.altKey) {
-            activeOctave = 'below';
-        }
+        if (e.shiftKey) activeOctave = 'above';
+        else if (e.ctrlKey || e.altKey) activeOctave = 'below';
         
         handleInput(k);
-        activeOctave = originalOctave; // Return context memory to regular register
+        activeOctave = originalOctave;
         e.preventDefault();
     }
 });
 
 document.addEventListener("DOMContentLoaded", () => {
-    if(document.getElementById('playerScreen')) {
-        buildWorkspaceDOM();
-    }
+    if(document.getElementById('playerScreen')) buildWorkspaceDOM();
 });
