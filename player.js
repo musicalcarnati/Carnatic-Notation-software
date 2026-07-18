@@ -513,3 +513,29 @@ window.addEventListener('keydown', (e) => {
 document.addEventListener("DOMContentLoaded", () => {
     if(document.getElementById('playerScreen')) buildWorkspaceDOM();
 });
+// Toggle logic for sideways animation transition
+function toggleCellActionsMenu() {
+    const panel = document.getElementById('cellActionsPanel');
+    if (panel) {
+        panel.classList.toggle('open');
+    }
+}
+
+// Seamless clipboard handling for native UI copying actions
+function copyCellContents() {
+    const textNode = document.getElementById(`s-${activeAvarthanamIndex}-${activeCellIndex}`);
+    if (!textNode) return;
+    
+    // Highlight text cleanly to utilize default system copy clip hooks
+    textInputSelectionSync(activeAvarthanamIndex, activeCellIndex);
+    
+    try {
+        // Direct write access to native device memory clipboard array
+        let rawContent = cellNotes[activeAvarthanamIndex][activeCellIndex].join(" ");
+        navigator.clipboard.writeText(rawContent || "-");
+        console.log("Cell content written directly to native clipboard buffer.");
+    } catch (err) {
+        // Fallback execution for older browsers
+        document.execCommand('copy');
+    }
+}
