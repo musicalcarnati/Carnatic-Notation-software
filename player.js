@@ -1,5 +1,5 @@
 /* ==========================================================================
-   RT Notation Software - Playback, Web Audio, & Tanpura Engine
+   RT Notation Software - Playback, Web Audio, & Carnatic Engine
    ========================================================================== */
 
 let audioCtx = null;
@@ -9,6 +9,7 @@ let activeCellIndex = 0;
 let activeOscillators = [];
 let playbackRunning = false;
 let stopPlaybackFlag = false;
+let copiedCellData = null; // Clipboard memory for cell duplication
 
 // Tanpura Audio Node Tracking Elements
 let tanpuraAudioElement = null;
@@ -29,20 +30,77 @@ const TanpuraFileExtensions = {
     'g': 'aac', 'g-sharp': 'aac'
 };
 
+// Precise Carnatic Tuning Frequency Ratios (Just Intonation Matrix)
 const SwaraRatios = {
-    'S': 1.0, 'R1': 256/243, 'R2': 9/8, 'R3': 32/27, 'G1': 9/8, 'G2': 6/5, 'G3': 5/4,
-    'M1': 4/3, 'M2': 45/32, 'P': 3/2, 'D1': 128/81, 'D2': 5/3, 'D3': 16/9, 'N1': 5/3, 'N2': 9/5, 'N3': 15/8
+    'S': 1.0,
+    'R1': 16/15,  'R2': 9/8,   'R3': 6/5,
+    'G1': 9/8,   'G2': 6/5,   'G3': 5/4,
+    'M1': 4/3,   'M2': 45/32,
+    'P': 1.5,
+    'D1': 8/5,   'D2': 5/3,   'D3': 9/5,
+    'N1': 5/3,   'N2': 9/5,   'N3': 15/8
 };
 
-const melakartaTableSource = [
-    { id: 1, name: "Kanakāngi", r:"R1", g:"G1", m:"M1", d:"D1", n:"N1" },
-    { id: 15, name: "Māyāmāḷavagowla", r:"R1", g:"G3", m:"M1", d:"D1", n:"N3" },
-    { id: 22, name: "Kharaharapriyā", r:"R2", g:"G2", m:"M1", d:"D2", n:"N2" },
-    { id: 29, name: "Dhīraśankarābharaṇam", r:"R2", g:"G3", m:"M1", d:"D2", n:"N3" },
-    { id: 65, name: "Mechakalyāni", r:"R2", g:"G3", m:"M2", d:"D2", n:"N3" }
+// Comprehensive 72 Melakarta Reference Names System Array
+const melakartaNames = [
+    "Kanakāngi", "Ratnāngi", "Gānamūrthi", "Vanaspathi", "Mānavathi", "Thānārūpi",
+    "Senāvahti", "Hanumathodi", "Dhhenuka", "NātakaPriyā", "KōkilaPriyā", "Rūpāvahti",
+    "Gāyakapriyā", "Vakuḷābharaṇam", "Māyāmāḷavagowla", "Chakravākam", "Sūryakāntham", "Hātakāmbari",
+    "Jhankaradhvani", "Naṭabhairavi", "Keeravāṇi", "Kharaharapriyā", "GowriManohari", "Varuṇapriyā",
+    "Māraranjani", "Chārukeshi", "Sarasāngi", "Harikāmbhōji", "Dhīraśankarābharaṇam", "Nāgānandini",
+    "Yāgapriyā", "Rāgapriyā", "Gāngeyabhūṣaṇi", "Vāgadheeswari", "Śūlini", "Chalanāta",
+    "Sālaga", "Jalārnavam", "Jhālavarāḷi", "Navaneetham", "Pāvani", "Raghupriyā",
+    "Gavāmbhoji", "Bhavapriyā", "Śubhapantuvarāḷi", "Ṣaḍvidhamārgiṇi", "Suvarṇāngi", "Divyamaṇi",
+    "Dhavalāmbari", "Nāmanārāyaṇi", "Kāmavardhani", "Rāmāpriyā", "Gāmanāśrama", "Viśvambhari",
+    "Śāmala", "Shanmukhapriyā", "Simhendramadhyamam", "Hemāvahti", "Dharmāvahti", "Neethimathi",
+    "Kānthāmaṇi", "Riṣabhapriyā", "Latāngi", "Vāchaspahi", "Mechakalyāni", "Chitresourceerama",
+    "Sucharithra", "Jyōthishvancerūpi", "Dhāthuvardhani", "Nāsikābhūṣaṇi", "Kōsalam", "Rasikapriyā"
 ];
 
-// App Navigation & Dynamic Rendering Layout
+// Algorithmic 72 Melakarta Swara Combinations Array Generator
+function generate72Melakartas() {
+    const list = [];
+    const rgPairs = [
+        {r:"R1", g:"G1"}, {r:"R1", g:"G2"}, {r:"R1", g:"G3"},
+        {r:"R2", g:"G2"}, {r:"R2", g:"G3"}, {r:"R3", g:"G3"}
+    ];
+    const dnPairs = [
+        {d:"D1", n:"N1"}, {d:"D1", n:"N2"}, {d:"D1", n:"N3"},
+        {d:"D2", n:"N2"}, {d:"D2", n:"N3"}, {d:"D3", n:"N3"}
+    ];
+
+    for (let i = 0; i < 72; i++) {
+        const mIdx = i < 36 ? 0 : 1; // 1-36 M1, 37-72 M2
+        const rgIdx = Math.floor((i % 36) / 6);
+        const dnIdx = i % 6;
+
+        list.push({
+            id: i + 1,
+            name: melakartaNames[i],
+            r: rgPairs[rgIdx].r,
+            g: rgPairs[rgIdx].g,
+            m: mIdx === 0 ? "M1" : "M2",
+            d: dnPairs[dnIdx].d,
+            n: dnPairs[dnIdx].n
+        });
+    }
+    return list;
+}
+const melakartaTableSource = generate72Melakartas();
+
+// Restoring the Detailed Thāḷam System Metrics Setup
+const ThalamDefinitions = {
+    'adi': { name: "Ādi Thāḷam (8 Beats - 4+2+2)", beats: 8 },
+    "dhruva": { name: "Dhruva Thāḷam (14 Beats - 4+2+4+4)", beats: 14 },
+    "matya": { name: "Matya Thāḷam (10 Beats - 4+2+4)", beats: 10 },
+    "rupaka": { name: "Rūpaka Thāḷam (6 Beats - 2+4)", beats: 6 },
+    "jhampa": { name: "Jhampa Thāḷam (10 Beats - 7+1+2)", beats: 10 },
+    "triputa": { name: "Triputa Thāḷam (7 Beats - 3+2+2)", beats: 7 },
+    "ata": { name: "Aṭa Thāḷam (14 Beats - 5+5+2+2)", beats: 14 },
+    "eka": { name: "Eka Thāḷam (4 Beats - 4)", beats: 4 }
+};
+
+// UI Navigation Matrix
 function navigateTo(screenId) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(screenId).classList.add('active');
@@ -94,9 +152,10 @@ function changeTheme(theme) {
     }
 }
 
-// Populating Rāgam Selection Form UI Element
+// Populate the Complete 72 Rāgams List Into Selection Form
 const rSelect = document.getElementById('melakartaSelect');
 if (rSelect) {
+    rSelect.innerHTML = "";
     melakartaTableSource.forEach(m => {
         let o = document.createElement('option'); o.value = m.id; o.innerText = `${m.id}. ${m.name}`;
         if(m.id === 15) o.selected = true; 
@@ -104,7 +163,24 @@ if (rSelect) {
     });
 }
 
-// Audio System Initialization Matrix
+// Populate the Complete Restored Thāḷam Parameters System
+const tSelect = document.getElementById('thalaSelect');
+if (tSelect) {
+    tSelect.innerHTML = "";
+    Object.keys(ThalamDefinitions).forEach(key => {
+        let o = document.createElement('option'); o.value = ThalamDefinitions[key].beats; o.innerText = ThalamDefinitions[key].name;
+        if(key === 'adi') o.selected = true;
+        tSelect.appendChild(o);
+    });
+    tSelect.onchange = function() {
+        totalBeatsPerCycle = parseInt(this.value);
+        cellSpeeds = Array.from({length: avarthanamsCount}, () => new Array(totalBeatsPerCycle).fill(1));
+        cellNotes = Array.from({length: avarthanamsCount}, () => Array.from({length: totalBeatsPerCycle}, () => []));
+        buildWorkspaceDOM();
+    };
+}
+
+// Audio System Initialization Engine
 function initAudioContext() {
     if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -132,7 +208,6 @@ function startTanpuraStream() {
     const pitchName = activeOption.getAttribute('data-name');
     const ext = TanpuraFileExtensions[pitchName] || 'mp3';
     
-    // Core file reference pointer targeting your workspace directory
     const filename = `${pitchName}-tanpura-thick.${ext}`;
     tanpuraAudioElement = new Audio(filename);
     tanpuraAudioElement.loop = true;
@@ -148,7 +223,7 @@ function startTanpuraStream() {
     tanpuraGainNode.connect(audioCtx.destination);
 
     tanpuraAudioElement.play().catch(err => {
-        console.log("Interactivity blocker active. Waiting for player trigger initialization.", err);
+        console.log("Interactivity block active.", err);
     });
 }
 
@@ -178,6 +253,24 @@ function adjustTanpuraVolume(val) {
 function getMaxCapacity(avarthanamIdx, cellIdx) {
     let baseNadai = parseInt(document.getElementById('nadaiSelect').value);
     return baseNadai * cellSpeeds[avarthanamIdx][cellIdx];
+}
+
+// Copy & Paste Execution Functions
+function copyCellContents() {
+    copiedCellData = {
+        notes: [...cellNotes[activeAvarthanamIndex][activeCellIndex]],
+        speed: cellSpeeds[activeAvarthanamIndex][activeCellIndex]
+    };
+    console.log("Cell data copied to software clipboard.");
+}
+
+function pasteCellContents() {
+    if (copiedCellData) {
+        cellNotes[activeAvarthanamIndex][activeCellIndex] = [...copiedCellData.notes];
+        cellSpeeds[activeAvarthanamIndex][activeCellIndex] = copiedCellData.speed;
+        internalCursorIndex = cellNotes[activeAvarthanamIndex][activeCellIndex].length;
+        buildWorkspaceDOM();
+    }
 }
 
 function buildWorkspaceDOM() {
@@ -298,7 +391,7 @@ function getNoteFreq(swaraChar) {
     if (!swaraChar || swaraChar === ',') return 0;
     const base = parseFloat(document.getElementById('pitchSelect').value);
     const mId = parseInt(document.getElementById('melakartaSelect').value);
-    const raga = melakartaTableSource.find(m => m.id === mId) || melakartaTableSource[1];
+    const raga = melakartaTableSource.find(m => m.id === mId) || melakartaTableSource[14];
     
     let cleanKey = swaraChar.replace(/[̣̇/\~\\\s]/g, '');
     let code = cleanKey;
@@ -433,12 +526,20 @@ if(bB) bB.onclick = () => setOct('below');
 if(bM) bM.onclick = () => setOct('middle'); 
 if(bA) bA.onclick = () => setOct('above');
 
-// Event Handlers for Physical Alphanumeric Keyboards
+// Event Handlers for Keyboard Controls
 window.addEventListener('keydown', (e) => {
     if(!document.getElementById('playerScreen') || !document.getElementById('playerScreen').classList.contains('active')) return;
     if(document.activeElement.classList.contains('lyrics-input')) return;
     initAudioContext();
     
+    // Copy/Paste shortcuts tracking (Ctrl+C / Ctrl+V or Meta/Cmd)
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+        copyCellContents(); e.preventDefault(); return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
+        pasteCellContents(); e.preventDefault(); return;
+    }
+
     if (e.key === 'Backspace') { handleBackspace(); e.preventDefault(); return; }
     if (e.key === 'Delete') { clearActiveCell(); e.preventDefault(); return; }
     
@@ -453,13 +554,29 @@ window.addEventListener('keydown', (e) => {
         e.preventDefault(); return;
     }
 
+    // Direct Character Typing for Gamakams via keyboard buttons
+    if (e.key === '/' || e.key === '\\' || e.key === '~') {
+        applyGamakam(e.key); e.preventDefault(); return;
+    }
+
     let k = e.key.toUpperCase();
-    if(['S','R','G','M','P','D','N',','].includes(k)) { handleInput(k); e.preventDefault(); }
+    if(['S','R','G','M','P','D','N',','].includes(k)) {
+        // Intercepting modifiers natively for seamless octave transitions
+        let originalOctave = activeOctave;
+        if (e.shiftKey) {
+            activeOctave = 'above';
+        } else if (e.ctrlKey || e.altKey) {
+            activeOctave = 'below';
+        }
+        
+        handleInput(k);
+        activeOctave = originalOctave; // Return context memory to regular register
+        e.preventDefault();
+    }
 });
 
-// Initialize workspace automatically if player is visible on page initialization
 document.addEventListener("DOMContentLoaded", () => {
-    if(document.getElementById('playerScreen') && document.getElementById('playerScreen').classList.contains('active')) {
+    if(document.getElementById('playerScreen')) {
         buildWorkspaceDOM();
     }
 });
