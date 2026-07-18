@@ -5,80 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RT Notation Software</title>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&family=Inter:wght@400;600&family=Noto+Serif:ital@0;1&family=Roboto+Mono:wght@500&family=Playfair+Display:ital,wght@0,600;1,400&family=Montserrat:wght@500;700&family=Lora&family=Fira+Code&family=Merriweather&family=Caveat:wght@700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-color: #f4f7f6;
-            --container-bg: #ffffff;
-            --text-color: #333333;
-            --border-color: #dddddd;
-            --accent-color: #007bff;
-            --font-family: 'Inter', sans-serif;
-        }
-        body { font-family: var(--font-family); background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; transition: all 0.3s ease; }
-        .container { max-width: 1300px; margin: 0 auto; background: var(--container-bg); padding: 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid var(--border-color); }
-        
-        /* Top Navigation & Visual Menu Bar */
-        .top-navbar { display: flex; justify-content: space-between; align-items: center; background: #eef2f3; padding: 10px 20px; border-radius: 6px; margin-bottom: 20px; border: 1px solid var(--border-color); }
-        .site-logo { font-family: 'Cinzel', serif; font-weight: bold; font-size: 1.2rem; cursor: pointer; }
-        .visual-bar-menu { display: flex; gap: 15px; align-items: center; }
-        .visual-bar-menu select { padding: 5px 10px; font-size: 0.85rem; border-radius: 4px; border: 1px solid #ccc; background: white; }
-
-        /* Screen States */
-        .screen { display: none; }
-        .screen.active { display: block; }
-
-        /* Home Screen Styles */
-        .home-content { text-align: center; padding: 60px 20px; }
-        .home-content h1 { font-family: 'Cinzel', serif; font-size: 2.8rem; margin-bottom: 15px; }
-        .home-content p { font-size: 1.2rem; max-width: 60px0px; margin: 0 auto 40px auto; opacity: 0.8; line-height: 1.6; }
-        .app-modes { display: flex; gap: 30px; justify-content: center; flex-wrap: wrap; }
-        .mode-card { background: var(--container-bg); border: 2px solid var(--border-color); padding: 30px; border-radius: 8px; width: 280px; cursor: pointer; transition: transform 0.2s, border-color 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
-        .mode-card:hover { transform: translateY(-4px); border-color: var(--accent-color); }
-        .mode-card h3 { font-size: 1.4rem; margin: 0 0 10px 0; font-family: 'Cinzel', serif; }
-        .mode-card p { font-size: 0.95rem; margin: 0; opacity: 0.7; }
-
-        /* Creator Screen Placeholder */
-        .placeholder-content { text-align: center; padding: 100px 20px; }
-        .placeholder-content h2 { font-family: 'Cinzel', serif; font-size: 2rem; margin-bottom: 20px; }
-
-        /* Player Engine Styles */
-        .essential-panel { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; align-items: flex-end; }
-        .config-group { display: flex; flex-direction: column; gap: 5px; }
-        label { font-size: 0.85rem; font-weight: bold; opacity: 0.8; }
-        select, input { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.95rem; background: var(--container-bg); color: var(--text-color); }
-        
-        .toggles-row { display: flex; gap: 15px; align-items: center; margin-bottom: 15px; font-size: 0.9rem; font-weight: bold; }
-        .toggles-row input { cursor: pointer; }
-
-        .menu-dropdown { margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; }
-        .menu-header { background: #eef2f3; padding: 10px 15px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; color: #444; }
-        .menu-content { padding: 15px; display: none; gap: 20px; flex-wrap: wrap; background: #fafbfc; border-top: 1px solid var(--border-color); }
-        .menu-content.open { display: flex; }
-
-        .toolbar { display: flex; gap: 10px; margin-bottom: 15px; background: #eef2f3; padding: 10px; border-radius: 6px; align-items: center; flex-wrap: wrap; }
-        .toolbar-label { font-size: 0.85rem; font-weight: bold; color: #555; margin-right: 5px; }
-        .btn { background: white; border: 1px solid #bbb; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-weight: 600; font-family: inherit; }
-        .btn.active { background: #007bff; color: white; border-color: #0056b3; }
-        .swaram-btn { background: #34495e; color: white; border: none; font-size: 1.1rem; min-width: 45px; cursor: pointer; border-radius: 4px; padding: 8px; }
-        .gamakam-btn { background: #9b59b6; color: white; border: none; font-weight: bold; }
-        
-        .avarthanam-block { background: #fdfdfd; border: 1px dashed var(--border-color); padding: 15px; border-radius: 6px; margin-bottom: 20px; }
-        .avarthanam-header { font-size: 0.9rem; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.8; }
-        .notation-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
-        .grid-cell { border: 1px solid var(--border-color); min-height: 125px; background: var(--container-bg); position: relative; padding: 5px; border-radius: 4px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; }
-        .grid-cell.focused { border-color: var(--accent-color); box-shadow: 0 0 5px rgba(0,123,255,0.3); }
-        
-        .grid-cell.speed-2 .swaram-input { text-decoration: underline; text-decoration-thickness: 2px; }
-        .grid-cell.speed-3 .swaram-input { text-decoration: underline double; text-decoration-thickness: 2px; }
-        
-        .cell-number { font-size: 0.75rem; color: #aaa; position: absolute; top: 2px; left: 5px; }
-        .cell-speed-indicator { font-size: 0.7rem; color: #e67e22; position: absolute; top: 2px; right: 5px; font-weight: bold; }
-        .swaram-wrapper { text-align: center; margin-top: 22px; width: 100%; }
-        
-        .swaram-input { width: 95%; border: none; outline: none; font-size: 1.3rem; text-align: center; font-weight: 600; background: transparent; color: var(--text-color); font-family: inherit; margin: 0 auto; white-space: pre-wrap; }
-        .lyrics-input { width: 90%; border: none; outline: none; font-size: 0.9rem; text-align: center; color: var(--text-color); border-top: 1px dashed var(--border-color); padding-top: 5px; align-self: center; background: transparent; opacity: 0.7; font-family: inherit; }
-        .clear-btn { background: #e74c3c; color: white; border: none; }
-    </style>
+    
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
@@ -138,8 +66,9 @@
     <div id="creatorScreen" class="screen">
         <div class="placeholder-content">
             <h2>Notation Creator Dashboard</h2>
-            <p>This module is currently blank. Extensive compositional editing functionality, structural segment linking, and print layouts are slated for subsequent phase expansions.</p>
-            <button class="btn" onclick="navigateTo('homeScreen')">Return to Home Screen</button>
+            <div id="creatorWorkspace">
+                <p>Compositional editing tools, grid segment parameters, and manuscript exports are being initialized...</p>
+            </div>
         </div>
     </div>
 
@@ -151,19 +80,19 @@
             </div>
             <div class="config-group">
                 <label for="pitchSelect">Sruthi</label>
-                <select id="pitchSelect" style="width: 120px;">
-                    <option value="261.63" selected>C (5 Kattai)</option>
-                    <option value="277.18">C# (5.5 Kattai)</option>
-                    <option value="293.66">D (2 Kattai)</option>
-                    <option value="311.13">D# (2.5 Kattai)</option>
-                    <option value="329.63">E (3 Kattai)</option>
-                    <option value="349.23">F (4 Kattai)</option>
-                    <option value="369.99">F# (4.5 Kattai)</option>
-                    <option value="392.00">G</option>
-                    <option value="415.30">G#</option>
-                    <option value="440.00">A (1 Kattai)</option>
-                    <option value="466.16">A# (1.5 Kattai)</option>
-                    <option value="493.88">B</option>
+                <select id="pitchSelect" style="width: 120px;" onchange="updateLiveTanpuraPitch()">
+                    <option value="261.63" data-name="c" selected>C (5 Kattai)</option>
+                    <option value="277.18" data-name="c-sharp">C# (5.5 Kattai)</option>
+                    <option value="293.66" data-name="d">D (2 Kattai)</option>
+                    <option value="311.13" data-name="d-sharp">D# (2.5 Kattai)</option>
+                    <option value="329.63" data-name="e">E (3 Kattai)</option>
+                    <option value="349.23" data-name="f">F (4 Kattai)</option>
+                    <option value="369.99" data-name="f-sharp">F# (4.5 Kattai)</option>
+                    <option value="392.00" data-name="g">G</option>
+                    <option value="415.30" data-name="g-sharp">G#</option>
+                    <option value="440.00" data-name="a">A (1 Kattai)</option>
+                    <option value="466.16" data-name="a-sharp">A# (1.5 Kattai)</option>
+                    <option value="493.88" data-name="b">B</option>
                 </select>
             </div>
             <div class="config-group">
@@ -196,7 +125,7 @@
         </div>
 
         <div class="toggles-row">
-            <label><input type="checkbox" id="tanpuraToggle"> Tanpura Background</label>
+            <label><input type="checkbox" id="tanpuraToggle" onchange="toggleTanpuraLayer()"> Tanpura Background</label>
             <label><input type="checkbox" id="metroToggle" checked> Metronome Click</label>
             <label><input type="checkbox" id="repeatToggle"> Loop Playback</label>
         </div>
@@ -220,6 +149,10 @@
                     <label for="metroVol">Metronome Volume</label>
                     <input type="range" id="metroVol" min="0" max="1" step="0.05" value="0.3">
                 </div>
+                <div class="config-group">
+                    <label for="tanpuraVol">Tanpura Volume</label>
+                    <input type="range" id="tanpuraVol" min="0" max="1" step="0.05" value="0.6" oninput="adjustTanpuraVolume(this.value)">
+                </div>
             </div>
         </div>
 
@@ -233,10 +166,6 @@
             <button class="btn" id="speed1Btn">Speed 1</button>
             <button class="btn" id="speed2Btn">Speed 2 (x2)</button>
             <button class="btn" id="speed3Btn">Speed 3 (x4)</button>
-            
-            <span style="margin-left: 10px;" class="toolbar-label">Clipboard:</span>
-            <button class="btn" onclick="copyActiveCell()">Copy</button>
-            <button class="btn" onclick="pasteToActiveCell()">Paste</button>
             
             <div style="margin-left: auto; display: flex; gap: 8px;">
                 <button class="btn" id="addAvarthanamBtn" style="background: #17a2b8; color: white; border: none;">➕ Add Āvarthanam</button>
@@ -270,356 +199,7 @@
     </div>
 </div>
 
-<script>
-    let audioCtx = null;
-    let activeOctave = 'middle';
-    let activeAvarthanamIndex = 0;
-    let activeCellIndex = 0;
-    let activeOscillators = [];
-    let playbackRunning = false;
-    let stopPlaybackFlag = false;
-
-    let avarthanamsCount = 1;
-    let totalBeatsPerCycle = 8;
-    
-    let cellSpeeds = [new Array(8).fill(1)];
-    let cellNotes = [Array.from({length: 8}, () => [])];
-    let internalCursorIndex = 0;
-
-    const SwaraRatios = {
-        'S': 1.0, 'R1': 256/243, 'R2': 9/8, 'R3': 32/27, 'G1': 9/8, 'G2': 6/5, 'G3': 5/4,
-        'M1': 4/3, 'M2': 45/32, 'P': 3/2, 'D1': 128/81, 'D2': 5/3, 'D3': 16/9, 'N1': 5/3, 'N2': 9/5, 'N3': 15/8
-    };
-
-    const melakartaTableSource = [
-        { id: 1, name: "Kanakāngi", r:"R1", g:"G1", m:"M1", d:"D1", n:"N1" },
-        { id: 15, name: "Māyāmāḷavagowla", r:"R1", g:"G3", m:"M1", d:"D1", n:"N3" },
-        { id: 22, name: "Kharaharapriyā", r:"R2", g:"G2", m:"M1", d:"D2", n:"N2" },
-        { id: 29, name: "Dhīraśankarābharaṇam", r:"R2", g:"G3", m:"M1", d:"D2", n:"N3" },
-        { id: 65, name: "Mechakalyāni", r:"R2", g:"G3", m:"M2", d:"D2", n:"N3" }
-    ];
-
-    // Navigation Sub-System Matrix
-    function navigateTo(screenId) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(screenId).classList.add('active');
-        if (screenId === 'playerScreen') {
-            buildWorkspaceDOM();
-        }
-    }
-
-    function toggleMenu(id) {
-        document.getElementById(id).classList.toggle('open');
-    }
-
-    function changeFont(font) {
-        document.documentElement.style.setProperty('--font-family', font);
-    }
-
-    function changeTheme(theme) {
-        const root = document.documentElement;
-        if(theme === 'cream') {
-            root.style.setProperty('--bg-color', '#fdf6e3'); root.style.setProperty('--container-bg', '#f5edd5');
-            root.style.setProperty('--text-color', '#586e75'); root.style.setProperty('--border-color', '#cb4b16');
-        } else if(theme === 'dark') {
-            root.style.setProperty('--bg-color', '#073642'); root.style.setProperty('--container-bg', '#002b36');
-            root.style.setProperty('--text-color', '#93a1a1'); root.style.setProperty('--border-color', '#2aa198');
-        } else if(theme === 'highcontrast') {
-            root.style.setProperty('--bg-color', '#000000'); root.style.setProperty('--container-bg', '#000000');
-            root.style.setProperty('--text-color', '#ffffff'); root.style.setProperty('--border-color', '#ffffff');
-        } else if(theme === 'cyberpunk') {
-            root.style.setProperty('--bg-color', '#1a0033'); root.style.setProperty('--container-bg', '#2d004d');
-            root.style.setProperty('--text-color', '#00ffcc'); root.style.setProperty('--border-color', '#ff007f');
-        } else if(theme === 'solarized') {
-            root.style.setProperty('--bg-color', '#fdf6e3'); root.style.setProperty('--container-bg', '#ffffff');
-            root.style.setProperty('--text-color', '#657b83'); root.style.setProperty('--border-color', '#93a1a1');
-        } else if(theme === 'forest') {
-            root.style.setProperty('--bg-color', '#1e2d24'); root.style.setProperty('--container-bg', '#2a3b30');
-            root.style.setProperty('--text-color', '#e1ecd7'); root.style.setProperty('--border-color', '#4e6e58');
-        } else if(theme === 'sepia') {
-            root.style.setProperty('--bg-color', '#704214'); root.style.setProperty('--container-bg', '#3d2314');
-            root.style.setProperty('--text-color', '#f4eedb'); root.style.setProperty('--border-color', '#a0522d');
-        } else if(theme === 'nord') {
-            root.style.setProperty('--bg-color', '#2e3440'); root.style.setProperty('--container-bg', '#3b4252');
-            root.style.setProperty('--text-color', '#d8dee9'); root.style.setProperty('--border-color', '#88c0d0');
-        } else if(theme === 'minimal') {
-            root.style.setProperty('--bg-color', '#f8f9fa'); root.style.setProperty('--container-bg', '#ffffff');
-            root.style.setProperty('--text-color', '#212529'); root.style.setProperty('--border-color', '#ced4da');
-        } else {
-            root.style.setProperty('--bg-color', '#f4f7f6'); root.style.setProperty('--container-bg', '#ffffff');
-            root.style.setProperty('--text-color', '#333333'); root.style.setProperty('--border-color', '#dddddd');
-        }
-    }
-
-    const rSelect = document.getElementById('melakartaSelect');
-    melakartaTableSource.forEach(m => {
-        let o = document.createElement('option'); o.value = m.id; o.innerText = `${m.id}. ${m.name}`;
-        if(m.id === 15) o.selected = true; 
-        rSelect.appendChild(o);
-    });
-
-    function getMaxCapacity(avarthanamIdx, cellIdx) {
-        let baseNadai = parseInt(document.getElementById('nadaiSelect').value);
-        return baseNadai * cellSpeeds[avarthanamIdx][cellIdx];
-    }
-
-    function buildWorkspaceDOM() {
-        const workspace = document.getElementById('studioWorkspace');
-        if (!workspace) return;
-        workspace.innerHTML = "";
-        for (let a = 0; a < avarthanamsCount; a++) {
-            let section = document.createElement('div');
-            section.className = "avarthanam-block";
-            let header = document.createElement('div');
-            header.className = "avarthanam-header";
-            header.innerText = `Āvarthanam Cycle #${a + 1}`;
-            section.appendChild(header);
-
-            let gridContainer = document.createElement('div');
-            gridContainer.className = "notation-grid";
-            
-            for (let i = 0; i < totalBeatsPerCycle; i++) {
-                let div = document.createElement('div');
-                div.className = `grid-cell ${(a === activeAvarthanamIndex && i === activeCellIndex) ? 'focused' : ''}`;
-                div.id = `c-${a}-${i}`;
-                if (cellSpeeds[a][i] === 2) div.classList.add('speed-2');
-                if (cellSpeeds[a][i] === 4) div.classList.add('speed-3');
-
-                div.onclick = () => focusCell(a, i);
-                let speedText = cellSpeeds[a][i] === 2 ? "Speed 2" : (cellSpeeds[a][i] === 4 ? "Speed 3" : "");
-
-                div.innerHTML = `
-                    <span class="cell-number">${i + 1}</span>
-                    <span class="cell-speed-indicator" id="speed-ind-${a}-${i}">${speedText}</span>
-                    <div class="swaram-wrapper"><pre class="swaram-input" id="s-${a}-${i}">-</pre></div>
-                    <input type="text" class="lyrics-input" placeholder="lyrics" onclick="event.stopPropagation();">`;
-                gridContainer.appendChild(div);
-            }
-            section.appendChild(gridContainer);
-            workspace.appendChild(section);
-            for (let i = 0; i < totalBeatsPerCycle; i++) renderCellText(a, i);
-        }
-    }
-
-    function focusCell(aIdx, cIdx) {
-        let oldCell = document.getElementById(`c-${activeAvarthanamIndex}-${activeCellIndex}`);
-        if(oldCell) oldCell.classList.remove('focused');
-        activeAvarthanamIndex = aIdx; activeCellIndex = cIdx;
-        let newCell = document.getElementById(`c-${activeAvarthanamIndex}-${activeCellIndex}`);
-        if(newCell) newCell.classList.add('focused');
-        internalCursorIndex = cellNotes[activeAvarthanamIndex][activeCellIndex].length; 
-        renderCellText(activeAvarthanamIndex, activeCellIndex);
-    }
-
-    function renderCellText(a, idx) {
-        const inputElement = document.getElementById(`s-${a}-${idx}`);
-        if (!inputElement) return;
-        let notesArr = [...cellNotes[a][idx]];
-        if (notesArr.length === 0) { inputElement.innerText = "-"; return; }
-        if (a === activeAvarthanamIndex && idx === activeCellIndex && !playbackRunning) {
-            notesArr.splice(internalCursorIndex, 0, "|");
-        }
-        inputElement.innerText = notesArr.join(" ");
-    }
-
-    function handleInput(note) {
-        let maxCap = getMaxCapacity(activeAvarthanamIndex, activeCellIndex);
-        if (cellNotes[activeAvarthanamIndex][activeCellIndex].length >= maxCap) return;
-        let formattedNote = note;
-        if(note !== ',') {
-            if(activeOctave === 'below') formattedNote = note + "̣";
-            if(activeOctave === 'above') formattedNote = note + "̇";
-        }
-        cellNotes[activeAvarthanamIndex][activeCellIndex].splice(internalCursorIndex, 0, formattedNote);
-        internalCursorIndex++;
-        renderCellText(activeAvarthanamIndex, activeCellIndex);
-    }
-
-    function applyGamakam(symbol) {
-        if (internalCursorIndex > 0) {
-            let targetIdx = internalCursorIndex - 1;
-            let targetNote = cellNotes[activeAvarthanamIndex][activeCellIndex][targetIdx];
-            if (!targetNote.includes('/') && !targetNote.includes('\\') && !targetNote.includes('~') && targetNote !== ',') {
-                cellNotes[activeAvarthanamIndex][activeCellIndex][targetIdx] = targetNote + symbol;
-                renderCellText(activeAvarthanamIndex, activeCellIndex);
-            }
-        }
-    }
-
-    function handleBackspace() {
-        if (internalCursorIndex > 0) {
-            cellNotes[activeAvarthanamIndex][activeCellIndex].splice(internalCursorIndex - 1, 1);
-            internalCursorIndex--;
-            renderCellText(activeAvarthanamIndex, activeCellIndex);
-        }
-    }
-
-    function setSpeed(multiplier, classLabel, indLabel) {
-        cellSpeeds[activeAvarthanamIndex][activeCellIndex] = multiplier;
-        buildWorkspaceDOM();
-    }
-
-    document.getElementById('speed1Btn').onclick = () => setSpeed(1, '', '');
-    document.getElementById('speed2Btn').onclick = () => setSpeed(2, 'speed-2', 'Speed 2');
-    document.getElementById('speed3Btn').onclick = () => setSpeed(4, 'speed-3', 'Speed 3');
-
-    document.getElementById('addAvarthanamBtn').onclick = function() {
-        avarthanamsCount++;
-        cellSpeeds.push(new Array(totalBeatsPerCycle).fill(1));
-        cellNotes.push(Array.from({length: totalBeatsPerCycle}, () => []));
-        buildWorkspaceDOM();
-    };
-
-    function clearActiveCell() { cellNotes[activeAvarthanamIndex][activeCellIndex] = []; internalCursorIndex = 0; renderCellText(activeAvarthanamIndex, activeCellIndex); }
-    function clearAllCells() { for(let a=0; a<avarthanamsCount; a++) { for(let i=0; i<totalBeatsPerCycle; i++) cellNotes[a][i] = []; } buildWorkspaceDOM(); }
-
-    function getNoteFreq(swaraChar) {
-        if (!swaraChar || swaraChar === ',') return 0;
-        const base = parseFloat(document.getElementById('pitchSelect').value);
-        const mId = parseInt(document.getElementById('melakartaSelect').value);
-        const raga = melakartaTableSource.find(m => m.id === mId) || melakartaTableSource[1];
-        
-        let cleanKey = swaraChar.replace(/[̣̇/\~\\\s]/g, '');
-        let code = cleanKey;
-
-        if(cleanKey === 'R') code = raga.r;
-        if(cleanKey === 'G') code = raga.g;
-        if(cleanKey === 'M') code = raga.m;
-        if(cleanKey === 'D') code = raga.d;
-        if(cleanKey === 'N') code = raga.n;
-
-        let ratio = SwaraRatios[code] || 1.0;
-        if(swaraChar.includes('̣')) ratio *= 0.5;
-        if(swaraChar.includes('̇')) ratio *= 2.0;
-
-        return base * ratio;
-    }
-
-    function executeSynthTone(swaraString, nextSwaraString, duration) {
-        if (!swaraString || swaraString.startsWith(',')) return;
-        
-        const type = document.getElementById('instrumentSelect').value;
-        const vol = parseFloat(document.getElementById('toneVol').value);
-        const now = audioCtx.currentTime;
-
-        let startFreq = getNoteFreq(swaraString);
-        if (startFreq === 0) return;
-        
-        const mainOsc = audioCtx.createOscillator();
-        const mainGain = audioCtx.createGain();
-        mainOsc.connect(mainGain);
-        mainGain.connect(audioCtx.destination);
-        activeOscillators.push(mainOsc);
-
-        mainOsc.type = (type === 'veena') ? 'triangle' : (type === 'flute' ? 'sine' : 'square');
-        mainGain.gain.setValueAtTime((type === 'piano' ? vol * 0.15 : vol * 0.4), now);
-        mainGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-
-        mainOsc.frequency.setValueAtTime(startFreq, now);
-
-        if (swaraString.includes('/') || swaraString.includes('\\')) {
-            let endFreq = (nextSwaraString && nextSwaraString !== ',') ? getNoteFreq(nextSwaraString) : startFreq * 1.25;
-            mainOsc.frequency.linearRampToValueAtTime(endFreq, now + duration);
-        } else if (swaraString.includes('~')) {
-            let varBound = startFreq * 0.035;
-            mainOsc.frequency.linearRampToValueAtTime(startFreq + varBound, now + (duration * 0.25));
-            mainOsc.frequency.linearRampToValueAtTime(startFreq - varBound, now + (duration * 0.5));
-            mainOsc.frequency.linearRampToValueAtTime(startFreq + varBound, now + (duration * 0.75));
-            mainOsc.frequency.linearRampToValueAtTime(startFreq, now + duration);
-        }
-
-        mainOsc.start(now);
-        mainOsc.stop(now + duration);
-    }
-
-    function triggerMetronomeClick(time) {
-        const vol = parseFloat(document.getElementById('metroVol').value);
-        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-        osc.type = 'triangle'; osc.frequency.setValueAtTime(900, time);
-        gain.gain.setValueAtTime(vol * 0.4, time); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.start(time); osc.stop(time + 0.06);
-    }
-
-    document.getElementById('playBtn').onclick = function() {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        if(playbackRunning) return;
-        playbackRunning = true; stopPlaybackFlag = false;
-        runLoopSequence();
-    };
-
-    async function runLoopSequence() {
-        let bpm = parseInt(document.getElementById('tempo').value) || 80;
-        let baseBeatLen = 60 / bpm;
-
-        for(let a=0; a<avarthanamsCount; a++) {
-            if(stopPlaybackFlag) break;
-            for(let i=0; i<totalBeatsPerCycle; i++) {
-                if(stopPlaybackFlag) break;
-                focusCell(a, i);
-
-                if(document.getElementById('metroToggle').checked) {
-                    triggerMetronomeClick(audioCtx.currentTime);
-                }
-
-                let maxCap = getMaxCapacity(a, i);
-                let executionNotes = [...cellNotes[a][i]];
-                while(executionNotes.length < maxCap) executionNotes.push(',');
-
-                let noteLen = baseBeatLen / maxCap;
-
-                for(let nIdx = 0; nIdx < executionNotes.length; nIdx++) {
-                    if(stopPlaybackFlag) break;
-                    let currentSwara = executionNotes[nIdx];
-                    let nextSwara = executionNotes[nIdx + 1] || null;
-                    
-                    executeSynthTone(currentSwara, nextSwara, noteLen);
-                    await new Promise(r => setTimeout(r, noteLen * 1000));
-                }
-            }
-        }
-
-        if(document.getElementById('repeatToggle').checked && !stopPlaybackFlag) {
-            runLoopSequence();
-        } else {
-            playbackRunning = false;
-            focusCell(0, 0);
-        }
-    }
-
-    document.getElementById('stopBtn').onclick = function() {
-        stopPlaybackFlag = true; playbackRunning = false;
-        activeOscillators.forEach(o => { try{o.stop();}catch(e){} });
-        activeOscillators = [];
-    };
-
-    const bB = document.getElementById('octaveBelowBtn'); const bM = document.getElementById('octaveMiddleBtn'); const bA = document.getElementById('octaveAboveBtn');
-    function setOct(mode) { activeOctave = mode; bB.classList.toggle('active', mode==='below'); bM.classList.toggle('active', mode==='middle'); bA.classList.toggle('active', mode==='above'); }
-    bB.onclick = () => setOct('below'); bM.onclick = () => setOct('middle'); bA.onclick = () => setOct('above');
-
-    window.addEventListener('keydown', (e) => {
-        if(!document.getElementById('playerScreen').classList.contains('active')) return;
-        if(document.activeElement.classList.contains('lyrics-input')) return;
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        if (e.key === 'Backspace') { handleBackspace(); e.preventDefault(); return; }
-        if (e.key === 'Delete') { clearActiveCell(); e.preventDefault(); return; }
-        
-        if (e.key === 'ArrowLeft') {
-            if (internalCursorIndex > 0) { internalCursorIndex--; renderCellText(activeAvarthanamIndex, activeCellIndex); }
-            else if (activeCellIndex > 0) { focusCell(activeAvarthanamIndex, activeCellIndex - 1); }
-            e.preventDefault(); return;
-        }
-        if (e.key === 'ArrowRight') {
-            if (internalCursorIndex < cellNotes[activeAvarthanamIndex][activeCellIndex].length) { internalCursorIndex++; renderCellText(activeAvarthanamIndex, activeCellIndex); }
-            else if (activeCellIndex < totalBeatsPerCycle - 1) { focusCell(activeAvarthanamIndex, activeCellIndex + 1); }
-            e.preventDefault(); return;
-        }
-
-        let k = e.key.toUpperCase();
-        if(['S','R','G','M','P','D','N',','].includes(k)) { handleInput(k); e.preventDefault(); }
-    });
-</script>
+<script src="player.js"></script>
+<script src="creator.js"></script>
 </body>
 </html>
