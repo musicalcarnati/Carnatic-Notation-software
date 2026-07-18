@@ -1,0 +1,380 @@
+/* ==========================================================================
+   RT Notation Software - Core Styles & Color Themes
+   ========================================================================== */
+
+:root {
+    --bg-color: #f4f7f6;
+    --container-bg: #ffffff;
+    --text-color: #333333;
+    --border-color: #dddddd;
+    --accent-color: #007bff;
+    --font-family: 'Inter', sans-serif;
+}
+
+body { 
+    font-family: var(--font-family); 
+    background-color: var(--bg-color); 
+    color: var(--text-color); 
+    margin: 0; 
+    padding: 20px; 
+    transition: all 0.3s ease; 
+}
+
+.container { 
+    max-width: 1300px; 
+    margin: 0 auto; 
+    background: var(--container-bg); 
+    padding: 25px; 
+    border-radius: 8px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+    border: 1px solid var(--border-color); 
+}
+
+/* --- Top Navigation & Persistent Visual Menu Bar --- */
+.top-navbar { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    background: #eef2f3; 
+    padding: 10px 20px; 
+    border-radius: 6px; 
+    margin-bottom: 20px; 
+    border: 1px solid var(--border-color); 
+}
+
+.site-logo { 
+    font-family: 'Cinzel', serif; 
+    font-weight: bold; 
+    font-size: 1.2rem; 
+    cursor: pointer; 
+}
+
+.visual-bar-menu { 
+    display: flex; 
+    gap: 15px; 
+    align-items: center; 
+}
+
+.visual-bar-menu select { 
+    padding: 5px 10px; 
+    font-size: 0.85rem; 
+    border-radius: 4px; 
+    border: 1px solid #ccc; 
+    background: white; 
+}
+
+/* --- Screen Architecture States --- */
+.screen { 
+    display: none; 
+}
+
+.screen.active { 
+    display: block; 
+}
+
+/* --- Home Screen Module Layouts --- */
+.home-content { 
+    text-align: center; 
+    padding: 60px 20px; 
+}
+
+.home-content h1 { 
+    font-family: 'Cinzel', serif; 
+    font-size: 2.8rem; 
+    margin-bottom: 15px; 
+}
+
+.home-content p { 
+    font-size: 1.2rem; 
+    max-width: 600px; 
+    margin: 0 auto 40px auto; 
+    opacity: 0.8; 
+    line-height: 1.6; 
+}
+
+.app-modes { 
+    display: flex; 
+    gap: 30px; 
+    justify-content: center; 
+    flex-wrap: wrap; 
+}
+
+.mode-card { 
+    background: var(--container-bg); 
+    border: 2px solid var(--border-color); 
+    padding: 30px; 
+    border-radius: 8px; 
+    width: 280px; 
+    cursor: pointer; 
+    transition: transform 0.2s, border-color 0.2s; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.02); 
+}
+
+.mode-card:hover { 
+    transform: translateY(-4px); 
+    border-color: var(--accent-color); 
+}
+
+.mode-card h3 { 
+    font-size: 1.4rem; 
+    margin: 0 0 10px 0; 
+    font-family: 'Cinzel', serif; 
+}
+
+.mode-card p { 
+    font-size: 0.95rem; 
+    margin: 0; 
+    opacity: 0.7; 
+}
+
+/* --- Creator Screen Styles --- */
+.placeholder-content { 
+    text-align: center; 
+    padding: 100px 20px; 
+}
+
+.placeholder-content h2 { 
+    font-family: 'Cinzel', serif; 
+    font-size: 2rem; 
+    margin-bottom: 20px; 
+}
+
+/* --- Player & Workspace Configurations --- */
+.essential-panel { 
+    display: flex; 
+    gap: 15px; 
+    margin-bottom: 20px; 
+    flex-wrap: wrap; 
+    align-items: flex-end; 
+}
+
+.config-group { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 5px; 
+}
+
+label { 
+    font-size: 0.85rem; 
+    font-weight: bold; 
+    opacity: 0.8; 
+}
+
+select, input { 
+    padding: 8px 12px; 
+    border: 1px solid var(--border-color); 
+    border-radius: 4px; 
+    font-size: 0.95rem; 
+    background: var(--container-bg); 
+    color: var(--text-color); 
+}
+
+.toggles-row { 
+    display: flex; 
+    gap: 15px; 
+    align-items: center; 
+    margin-bottom: 15px; 
+    font-size: 0.9rem; 
+    font-weight: bold; 
+}
+
+.toggles-row input { 
+    cursor: pointer; 
+}
+
+/* --- Collapsible Sub-Menus --- */
+.menu-dropdown { 
+    margin-bottom: 15px; 
+    border: 1px solid var(--border-color); 
+    border-radius: 6px; 
+    overflow: hidden; 
+}
+
+.menu-header { 
+    background: #eef2f3; 
+    padding: 10px 15px; 
+    font-weight: bold; 
+    cursor: pointer; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    font-size: 0.95rem; 
+    color: #444; 
+}
+
+.menu-content { 
+    padding: 15px; 
+    display: none; 
+    gap: 20px; 
+    flex-wrap: wrap; 
+    background: #fafbfc; 
+    border-top: 1px solid var(--border-color); 
+}
+
+.menu-content.open { 
+    display: flex; 
+}
+
+/* --- Action Control Toolbars --- */
+.toolbar { 
+    display: flex; 
+    gap: 10px; 
+    margin-bottom: 15px; 
+    background: #eef2f3; 
+    padding: 10px; 
+    border-radius: 6px; 
+    align-items: center; 
+    flex-wrap: wrap; 
+}
+
+.toolbar-label { 
+    font-size: 0.85rem; 
+    font-weight: bold; 
+    color: #555; 
+    margin-right: 5px; 
+}
+
+.btn { 
+    background: white; 
+    border: 1px solid #bbb; 
+    padding: 8px 14px; 
+    border-radius: 4px; 
+    cursor: pointer; 
+    font-weight: 600; 
+    font-family: inherit; 
+}
+
+.btn.active { 
+    background: #007bff; 
+    color: white; 
+    border-color: #0056b3; 
+}
+
+.swaram-btn { 
+    background: #34495e; 
+    color: white; 
+    border: none; 
+    font-size: 1.1rem; 
+    min-width: 45px; 
+    cursor: pointer; 
+    border-radius: 4px; 
+    padding: 8px; 
+}
+
+.gamakam-btn { 
+    background: #9b59b6; 
+    color: white; 
+    border: none; 
+    font-weight: bold; 
+}
+
+/* --- Notation Rhythmic Matrix Grid --- */
+.avarthanam-block { 
+    background: #fdfdfd; 
+    border: 1px dashed var(--border-color); 
+    padding: 15px; 
+    border-radius: 6px; 
+    margin-bottom: 20px; 
+}
+
+.avarthanam-header { 
+    font-size: 0.9rem; 
+    font-weight: bold; 
+    margin-bottom: 10px; 
+    text-transform: uppercase; 
+    letter-spacing: 0.5px; 
+    opacity: 0.8; 
+}
+
+.notation-grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); 
+    gap: 10px; 
+}
+
+.grid-cell { 
+    border: 1px solid var(--border-color); 
+    min-height: 125px; 
+    background: var(--container-bg); 
+    position: relative; 
+    padding: 5px; 
+    border-radius: 4px; 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: space-between; 
+    cursor: pointer; 
+}
+
+.grid-cell.focused { 
+    border-color: var(--accent-color); 
+    box-shadow: 0 0 5px rgba(0,123,255,0.3); 
+}
+
+/* Speed Layer Formatting Overlays */
+.grid-cell.speed-2 .swaram-input { 
+    text-decoration: underline; 
+    text-decoration-thickness: 2px; 
+}
+
+.grid-cell.speed-3 .swaram-input { 
+    text-decoration: underline double; 
+    text-decoration-thickness: 2px; 
+}
+
+.cell-number { 
+    font-size: 0.75rem; 
+    color: #aaa; 
+    position: absolute; 
+    top: 2px; 
+    left: 5px; 
+}
+
+.cell-speed-indicator { 
+    font-size: 0.7rem; 
+    color: #e67e22; 
+    position: absolute; 
+    top: 2px; 
+    right: 5px; 
+    font-weight: bold; 
+}
+
+.swaram-wrapper { 
+    text-align: center; 
+    margin-top: 22px; 
+    width: 100%; 
+}
+
+.swaram-input { 
+    width: 95%; 
+    border: none; 
+    outline: none; 
+    font-size: 1.3rem; 
+    text-align: center; 
+    font-weight: 600; 
+    background: transparent; 
+    color: var(--text-color); 
+    font-family: inherit; 
+    margin: 0 auto; 
+    white-space: pre-wrap; 
+}
+
+.lyrics-input { 
+    width: 90%; 
+    border: none; 
+    outline: none; 
+    font-size: 0.9rem; 
+    text-align: center; 
+    color: var(--text-color); 
+    border-top: 1px dashed var(--border-color); 
+    padding-top: 5px; 
+    align-self: center; 
+    background: transparent; 
+    opacity: 0.7; 
+    font-family: inherit; 
+}
+
+.clear-btn { 
+    background: #e74c3c; 
+    color: white; 
+    border: none; 
+}
