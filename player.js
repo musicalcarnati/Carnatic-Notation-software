@@ -369,7 +369,6 @@ function getNoteFreq(swaraChar) {
     return base * ratio;
 }
 
-// 100% Reliable Local Audio Synthesis Engine
 function executeSynthTone(swaraString, nextSwaraString, duration) {
     if (!swaraString || swaraString.startsWith(',')) return;
     
@@ -380,19 +379,80 @@ function executeSynthTone(swaraString, nextSwaraString, duration) {
     let targetFreq = getNoteFreq(swaraString);
     if (targetFreq === 0) return;
 
+    // 1. Initialize Audio Nodes
     const osc = audioCtx.createOscillator();
+    const filterNode = audioCtx.createBiquadFilter();
     const gainNode = audioCtx.createGain();
 
-    // Sound Profiling Rules matching selected Instrument Timbres
+    // 2. Apply Subtractive Synthesis & Envelope shaping per instrument
     if (instrumentType === 'veena') {
-        osc.type = 'triangle'; // Rich string tone
+        osc.type = 'triangle';
+        filterNode.type = 'lowpass';
+        
+        // Emulate wooden pluck resonance
+        filterNode.frequency.setValueAtTime(targetFreq * 3, now);
+        filterNode.frequency.exponentialRampToValueAtTime(targetFreq * 1.2, now + 0.08);
+        filterNode.Q.setValueAtTime(4, now);
+        
+        // String envelope (Sharp attack, rapid pluck decay, long ringout)
+        gainNode.gain.setValueAtTime(0, now);
+        gainNode.gain.linearRampToValueAtTime(vol * 0.5, now + 0.005); 
+        gainNode.gain.exponentialRampToValueAtTime(vol * 0.25, now + 0.06); 
+        gainNode.gain.exponentialRampToValueAtTime(0.00001, now + duration); 
+        
     } else if (instrumentType === 'flute') {
-        osc.type = 'sine';     // Pure breath tone
+        osc.type = 'sine';
+        filterNode.type = 'bandpass';
+        
+        // Clear out synthetic high-end artifacts around the fundamental pitch
+        filterNode.frequency.setValueAtTime(targetFreq, now);
+        filterNode.Q.setValueAtTime(1.5, now);
+        
+        // Wind envelope (Soft breath attack, sustained body, gentle release)
+        gainNode.gain.setValueAtTime(0, now);
+        gainNode.gain.linearRampToValueAtTime(vol * 0.4, now + 0.04); 
+        gainNode.gain.setValueAtTime(vol * 0.4, now + duration - 0.03); 
+        gainNode.gain.linearRampToValueAtTime(0.00001, now + duration); 
+        
     } else {
-        osc.type = 'sawtooth'; // Bright piano/harmonium edge
+        // Harmonium/Reed style
+        osc.type = 'sawtooth';
+        filterNode.type = 'lowpass';
+        
+        // Smooth out the harsh sawtooth buzz
+        filterNode.frequency.setValueAtTime(targetFreq * 1.8, now);
+        filterNode.frequency.linearRampToValueAtTime(targetFreq * 1.4, now + duration);
+        filterNode.Q.setValueAtTime(1, now);
+        
+        gainNode.gain.setValueAtTime(0, now);
+        gainNode.gain.linearRampToValueAtTime(vol * 0.25, now + 0.02);
+        gainNode.gain.setValueAtTime(vol * 0.25, now + duration - 0.02);
+        gainNode.gain.linearRampToValueAtTime(0.00001, now + duration);
     }
 
     osc.frequency.setValueAtTime(targetFreq, now);
+
+    // 3. Keep your Gamakam Glide & Oscillation Logic intact
+    if (swaraString.includes('/') || swaraString.includes('\\')) {
+        let endFreq = (nextSwaraString && nextSwaraString !== ',') ? getNoteFreq(nextSwaraString) : targetFreq * 1.2;
+        osc.frequency.linearRampToValueAtTime(endFreq, now + duration);
+    } else if (swaraString.includes('~')) {
+        let oscillationRange = targetFreq * 0.04;
+        osc.frequency.linearRampToValueAtTime(targetFreq + oscillationRange, now + (duration * 0.25));
+        osc.frequency.linearRampToValueAtTime(targetFreq - oscillationRange, now + (duration * 0.5));
+        osc.frequency.linearRampToValueAtTime(targetFreq + oscillationRange, now + (duration * 0.75));
+        osc.frequency.linearRampToValueAtTime(targetFreq, now + duration);
+    }
+
+    // 4. Connect the updated sound chain
+    osc.connect(filterNode);
+    filterNode.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    activeOscillators.push(osc);
+    osc.start(now);
+    osc.stop(now + duration);
+}
 
     // Dynamic Swaram Gamakam Modeling Architecture
     if (swaraString.includes('/') || swaraString.includes('\\')) {
