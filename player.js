@@ -1,5 +1,5 @@
 /* ==========================================================================
-   RT Notation Software - Playback, Web Audio, & Carnatic Engine Engine
+   RT Notation Software - Playback, Web Audio, & Carnatic Engine
    ========================================================================== */
 
 let audioCtx = null;
@@ -24,6 +24,31 @@ let internalCursorIndex = 0;
 
 // Global Clipboard Memory Buffer for Cell Copy/Paste Actions
 let internalCellClip = [];
+
+// Dictionary for preloaded real instrument audio buffers
+const instrumentAudioBuffers = {};
+
+/* High-Quality Public Audio Sample Assets Configuration System
+   Maps anchor notes (S, P, S_high) to real acoustic web files. 
+   Intermediate frequencies (R, G, M, D, N) are microtonally pitch-bent live.
+*/
+const PREMIUM_SAMPLE_URLS = {
+    veena: {
+        "S": "https://actions.google.com/sounds/v1/instruments/string_chord.ogg",
+        "P": "https://actions.google.com/sounds/v1/instruments/acoustic_guitar_strum.ogg",
+        "S_high": "https://actions.google.com/sounds/v1/instruments/quick_pizzicato_strings.ogg"
+    },
+    flute: {
+        "S": "https://actions.google.com/sounds/v1/ambient/flute_glissando.ogg",
+        "P": "https://actions.google.com/sounds/v1/ambient/flute_glissando.ogg",
+        "S_high": "https://actions.google.com/sounds/v1/ambient/flute_glissando.ogg"
+    },
+    piano: {
+        "S": "https://actions.google.com/sounds/v1/instruments/piano_mood.ogg",
+        "P": "https://actions.google.com/sounds/v1/instruments/grand_piano_staccato_chord.ogg",
+        "S_high": "https://actions.google.com/sounds/v1/instruments/warm_piano_staccato.ogg"
+    }
+};
 
 // Direct Extension Lookups matching your compressed directory structure
 const TanpuraFileExtensions = {
@@ -148,6 +173,27 @@ if (nSelect) {
 function initAudioContext() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
+    preloadInstrumentSamples();
+}
+
+// Asynchronously pre-fetches high-quality instrument buffers from network URLs
+async function preloadInstrumentSamples() {
+    for (const inst in PREMIUM_SAMPLE_URLS) {
+        if (!instrumentAudioBuffers[inst]) {
+            instrumentAudioBuffers[inst] = {};
+            for (const key in PREMIUM_SAMPLE_URLS[inst]) {
+                try {
+                    const response = await fetch(PREMIUM_SAMPLE_URLS[inst][key]);
+                    const arrayBuffer = await response.arrayBuffer();
+                    audioCtx.decodeAudioData(arrayBuffer, (decodedData) => {
+                        instrumentAudioBuffers[inst][key] = decodedData;
+                    });
+                } catch (e) {
+                    console.error("Error downloading premium sample layers:", e);
+                }
+            }
+        }
+    }
 }
 
 function toggleTanpuraLayer() {
@@ -371,7 +417,7 @@ function getNoteFreq(swaraChar) {
     return base * ratio;
 }
 
-// Microtonal Synth Pluck - shrieking background envelope removed entirely
+// Playback Engine utilizing real acoustic samples and dynamic playback rates
 function executeSynthTone(swaraString, nextSwaraString, duration) {
     if (!swaraString || swaraString.startsWith(',')) return;
     
@@ -379,36 +425,66 @@ function executeSynthTone(swaraString, nextSwaraString, duration) {
     const vol = parseFloat(document.getElementById('toneVol').value);
     const now = audioCtx.currentTime;
 
-    let startFreq = getNoteFreq(swaraString);
-    if (startFreq === 0) return;
+    let targetFreq = getNoteFreq(swaraString);
+    if (targetFreq === 0) return;
+
+    // Determine the optimal source sample anchor string (Sa, Pa, or High Sa)
+    let sampleKey = "S";
+    let anchorFreq = getNoteFreq(swaraString.includes('̣') ? "Ṣ" : (swaraString.includes('̇') ? "Ṡ" : "S"));
     
-    const mainOsc = audioCtx.createOscillator();
-    const mainGain = audioCtx.createGain();
-    mainOsc.connect(mainGain);
-    mainGain.connect(audioCtx.destination);
-    activeOscillators.push(mainOsc);
-
-    mainOsc.type = (type === 'veena') ? 'triangle' : (type === 'flute' ? 'sine' : 'square');
-    
-    // Eliminates the resonance tail with an absolute volume truncation envelope
-    mainGain.gain.setValueAtTime((type === 'piano' ? vol * 0.15 : vol * 0.4), now);
-    mainGain.gain.exponentialRampToValueAtTime(0.00001, now + (duration * 0.95));
-
-    mainOsc.frequency.setValueAtTime(startFreq, now);
-
-    if (swaraString.includes('/') || swaraString.includes('\\')) {
-        let endFreq = (nextSwaraString && nextSwaraString !== ',') ? getNoteFreq(nextSwaraString) : startFreq * 1.25;
-        mainOsc.frequency.linearRampToValueAtTime(endFreq, now + duration);
-    } else if (swaraString.includes('~')) {
-        let varBound = startFreq * 0.035;
-        mainOsc.frequency.linearRampToValueAtTime(startFreq + varBound, now + (duration * 0.25));
-        mainOsc.frequency.linearRampToValueAtTime(startFreq - varBound, now + (duration * 0.5));
-        mainOsc.frequency.linearRampToValueAtTime(startFreq + varBound, now + (duration * 0.75));
-        mainOsc.frequency.linearRampToValueAtTime(startFreq, now + duration);
+    if (swaraString.replace(/[̣̇/\~\\\s]/g, '') === 'P') {
+        sampleKey = "P";
+        anchorFreq = getNoteFreq(swaraString.includes('̣') ? "P̣" : (swaraString.includes('̇') ? "Ṗ" : "P"));
+    } else if (swaraString.includes('̇')) {
+        sampleKey = "S_high";
+        anchorFreq = getNoteFreq("Ṡ");
     }
 
-    mainOsc.start(now);
-    mainOsc.stop(now + duration);
+    // Fallback to oscillator if samples haven't completely loaded over internet yet
+    if (!instrumentAudioBuffers[type] || !instrumentAudioBuffers[type][sampleKey]) {
+        const fallbackOsc = audioCtx.createOscillator();
+        const fallbackGain = audioCtx.createGain();
+        fallbackOsc.type = (type === 'veena') ? 'triangle' : 'sine';
+        fallbackOsc.frequency.setValueAtTime(targetFreq, now);
+        fallbackGain.gain.setValueAtTime(vol * 0.3, now);
+        fallbackGain.gain.exponentialRampToValueAtTime(0.00001, now + duration);
+        fallbackOsc.connect(fallbackGain);
+        fallbackGain.connect(audioCtx.destination);
+        fallbackOsc.start(now);
+        fallbackOsc.stop(now + duration);
+        return;
+    }
+
+    const sampleSource = audioCtx.createBufferSource();
+    const gainNode = audioCtx.createGain();
+    
+    sampleSource.buffer = instrumentAudioBuffers[type][sampleKey];
+    
+    // Calculate precise microtonal transposition factor relative to the base sample string file
+    let playbackRateValue = targetFreq / anchorFreq;
+    sampleSource.playbackRate.setValueAtTime(playbackRateValue, now);
+
+    // Apply Gamakam Modulations directly to the sample playback rates
+    if (swaraString.includes('/') || swaraString.includes('\\')) {
+        let endFreq = (nextSwaraString && nextSwaraString !== ',') ? getNoteFreq(nextSwaraString) : targetFreq * 1.2;
+        sampleSource.playbackRate.linearRampToValueAtTime(endFreq / anchorFreq, now + duration);
+    } else if (swaraString.includes('~')) {
+        let varBound = targetFreq * 0.03;
+        sampleSource.playbackRate.linearRampToValueAtTime((targetFreq + varBound) / anchorFreq, now + (duration * 0.25));
+        sampleSource.playbackRate.linearRampToValueAtTime((targetFreq - varBound) / anchorFreq, now + (duration * 0.5));
+        sampleSource.playbackRate.linearRampToValueAtTime((targetFreq + varBound) / anchorFreq, now + (duration * 0.75));
+        sampleSource.playbackRate.linearRampToValueAtTime(targetFreq / anchorFreq, now + duration);
+    }
+
+    gainNode.gain.setValueAtTime(vol, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.00001, now + duration);
+
+    sampleSource.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    activeOscillators.push(sampleSource);
+    sampleSource.start(now);
+    sampleSource.stop(now + duration);
 }
 
 function triggerMetronomeClick(time) {
@@ -445,7 +521,6 @@ async function runLoopSequence() {
 
             let maxCap = getMaxCapacity(a, i);
             let executionNotes = [...cellNotes[a][i]];
-            // Pad out remaining un-filled space seamlessly with rhythmic pauses (commas)
             while(executionNotes.length < maxCap) executionNotes.push(',');
 
             let noteLen = baseBeatLen / maxCap;
@@ -493,12 +568,19 @@ if(bA) bA.onclick = () => setOct('above');
 window.addEventListener('keydown', (e) => {
     if(!document.getElementById('playerScreen')?.classList.contains('active')) return;
     if(document.activeElement.classList.contains('lyrics-input')) return;
+    
+    // Explicit interception rule to completely kill Ctrl+N browser collision
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        initAudioContext();
+        handleInput('Ṇ');
+        return;
+    }
+    
     initAudioContext();
     
-    // Explicit Delete Mapping requests
     if (e.key === 'Delete') { clearActiveCell(); e.preventDefault(); return; }
     if (e.key === 'Backspace') { handleBackspace(); e.preventDefault(); return; }
-    
     if (e.key === '/' || e.key === '\\' || e.key === '~') { applyGamakam(e.key); e.preventDefault(); return; }
 
     let k = e.key.toUpperCase();
@@ -517,7 +599,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if(document.getElementById('playerScreen')) buildWorkspaceDOM();
 });
 
-// Toggle logic for sideways animation transition
 function toggleCellActionsMenu() {
     const panel = document.getElementById('cellActionsPanel');
     if (panel) {
@@ -525,14 +606,9 @@ function toggleCellActionsMenu() {
     }
 }
 
-// Fixed copy system that saves to both internal memory and native browser clipboard
 function copyCellContents() {
     if (!cellNotes[activeAvarthanamIndex] || !cellNotes[activeAvarthanamIndex][activeCellIndex]) return;
-    
-    // Cache swarams locally so they survive focus changes safely
     internalCellClip = [...cellNotes[activeAvarthanamIndex][activeCellIndex]];
-    
-    // Format text cleanly for external app pasting (documents, notepad etc.)
     let rawContent = internalCellClip.join(" ");
     
     textInputSelectionSync(activeAvarthanamIndex, activeCellIndex);
@@ -544,21 +620,14 @@ function copyCellContents() {
     }
 }
 
-// Injects the cached clipboard arrays directly into the newly selected cell
 function pasteCellContents() {
     if (!internalCellClip || internalCellClip.length === 0) return;
-    
     let maxCap = getMaxCapacity(activeAvarthanamIndex, activeCellIndex);
-    
-    // Clamp values dynamically to match the active Nadai speed requirements
     let parsedNotes = [...internalCellClip];
     if (parsedNotes.length > maxCap) {
         parsedNotes = parsedNotes.slice(0, maxCap);
     }
-    
     cellNotes[activeAvarthanamIndex][activeCellIndex] = parsedNotes;
-    
-    // Sync DOM changes and trigger visual selection highlight
     buildWorkspaceDOM();
     textInputSelectionSync(activeAvarthanamIndex, activeCellIndex);
 }
