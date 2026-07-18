@@ -1,5 +1,5 @@
 /* ==========================================================================
-   RT Notation Software - Playback, Web Audio, & Carnatic Engine
+   RT Notation Software - Playback, Web Audio, & Carnatic Engine (100% Offline)
    ========================================================================== */
 
 let audioCtx = null;
@@ -24,28 +24,6 @@ let internalCursorIndex = 0;
 
 // Global Clipboard Memory Buffer for Cell Copy/Paste Actions
 let internalCellClip = [];
-
-// Dictionary for preloaded real instrument audio buffers
-const instrumentAudioBuffers = {};
-
-/* Reliable, Publicly Accessible Instrument Assets (Wikimedia Commons stable paths) */
-const PREMIUM_SAMPLE_URLS = {
-    veena: {
-        "S": "https://upload.wikimedia.org/wikipedia/commons/4/46/A_major_guitarchord.ogg",
-        "P": "https://upload.wikimedia.org/wikipedia/commons/7/75/E_major_guitarchord.ogg",
-        "S_high": "https://upload.wikimedia.org/wikipedia/commons/9/91/D_major_guitarchord.ogg"
-    },
-    flute: {
-        "S": "https://upload.wikimedia.org/wikipedia/commons/3/30/Flute_c4.ogg",
-        "P": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Flute_g4.ogg",
-        "S_high": "https://upload.wikimedia.org/wikipedia/commons/d/da/Flute_c5.ogg"
-    },
-    piano: {
-        "S": "https://upload.wikimedia.org/wikipedia/commons/f/f5/A440_piano.ogg",
-        "P": "https://upload.wikimedia.org/wikipedia/commons/5/5f/Piano_E4.ogg",
-        "S_high": "https://upload.wikimedia.org/wikipedia/commons/b/b3/Piano_A5.ogg"
-    }
-};
 
 // Direct Extension Lookups matching your compressed directory structure
 const TanpuraFileExtensions = {
@@ -170,34 +148,6 @@ if (nSelect) {
 function initAudioContext() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
-    preloadInstrumentSamples();
-}
-
-// Safe asynchronous loader with detailed fallbacks
-async function preloadInstrumentSamples() {
-    for (const inst in PREMIUM_SAMPLE_URLS) {
-        if (!instrumentAudioBuffers[inst]) {
-            instrumentAudioBuffers[inst] = {};
-            for (const key in PREMIUM_SAMPLE_URLS[inst]) {
-                try {
-                    const response = await fetch(PREMIUM_SAMPLE_URLS[inst][key]);
-                    if (!response.ok) throw new Error(`HTTP status ${response.status}`);
-                    const arrayBuffer = await response.arrayBuffer();
-                    
-                    audioCtx.decodeAudioData(arrayBuffer, 
-                        (decodedData) => {
-                            instrumentAudioBuffers[inst][key] = decodedData;
-                        },
-                        (err) => {
-                            console.warn(`Decoding failed safely for ${inst}-${key}:`, err);
-                        }
-                    );
-                } catch (e) {
-                    console.warn(`Could not preload network audio file for [${inst} - ${key}]. Engine will smoothly fall back to synth wave.`, e.message);
-                }
-            }
-        }
-    }
 }
 
 function toggleTanpuraLayer() {
@@ -419,72 +369,53 @@ function getNoteFreq(swaraChar) {
     return base * ratio;
 }
 
+// 100% Reliable Local Audio Synthesis Engine
 function executeSynthTone(swaraString, nextSwaraString, duration) {
     if (!swaraString || swaraString.startsWith(',')) return;
     
-    const type = document.getElementById('instrumentSelect').value;
+    const instrumentType = document.getElementById('instrumentSelect').value;
     const vol = parseFloat(document.getElementById('toneVol').value);
     const now = audioCtx.currentTime;
 
     let targetFreq = getNoteFreq(swaraString);
     if (targetFreq === 0) return;
 
-    let sampleKey = "S";
-    let anchorFreq = getNoteFreq(swaraString.includes('̣') ? "Ṣ" : (swaraString.includes('̇') ? "Ṡ" : "S"));
-    
-    if (swaraString.replace(/[̣̇/\~\\\s]/g, '') === 'P') {
-        sampleKey = "P";
-        anchorFreq = getNoteFreq(swaraString.includes('̣') ? "P̣" : (swaraString.includes('̇') ? "Ṗ" : "P"));
-    } else if (swaraString.includes('̇')) {
-        sampleKey = "S_high";
-        anchorFreq = getNoteFreq("Ṡ");
-    }
-
-    // SAFE SEAMLESS FALLBACK: If samples aren't loaded or failed, play smooth oscillator waves
-    if (!instrumentAudioBuffers[type] || !instrumentAudioBuffers[type][sampleKey]) {
-        const fallbackOsc = audioCtx.createOscillator();
-        const fallbackGain = audioCtx.createGain();
-        fallbackOsc.type = (type === 'veena') ? 'triangle' : 'sine';
-        fallbackOsc.frequency.setValueAtTime(targetFreq, now);
-        fallbackGain.gain.setValueAtTime(vol * 0.3, now);
-        fallbackGain.gain.exponentialRampToValueAtTime(0.00001, now + duration);
-        fallbackOsc.connect(fallbackGain);
-        fallbackGain.connect(audioCtx.destination);
-        
-        activeOscillators.push(fallbackOsc);
-        fallbackOsc.start(now);
-        fallbackOsc.stop(now + duration);
-        return;
-    }
-
-    const sampleSource = audioCtx.createBufferSource();
+    const osc = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
-    
-    sampleSource.buffer = instrumentAudioBuffers[type][sampleKey];
-    
-    let playbackRateValue = targetFreq / anchorFreq;
-    sampleSource.playbackRate.setValueAtTime(playbackRateValue, now);
 
+    // Sound Profiling Rules matching selected Instrument Timbres
+    if (instrumentType === 'veena') {
+        osc.type = 'triangle'; // Rich string tone
+    } else if (instrumentType === 'flute') {
+        osc.type = 'sine';     // Pure breath tone
+    } else {
+        osc.type = 'sawtooth'; // Bright piano/harmonium edge
+    }
+
+    osc.frequency.setValueAtTime(targetFreq, now);
+
+    // Dynamic Swaram Gamakam Modeling Architecture
     if (swaraString.includes('/') || swaraString.includes('\\')) {
         let endFreq = (nextSwaraString && nextSwaraString !== ',') ? getNoteFreq(nextSwaraString) : targetFreq * 1.2;
-        sampleSource.playbackRate.linearRampToValueAtTime(endFreq / anchorFreq, now + duration);
+        osc.frequency.linearRampToValueAtTime(endFreq, now + duration);
     } else if (swaraString.includes('~')) {
-        let varBound = targetFreq * 0.03;
-        sampleSource.playbackRate.linearRampToValueAtTime((targetFreq + varBound) / anchorFreq, now + (duration * 0.25));
-        sampleSource.playbackRate.linearRampToValueAtTime((targetFreq - varBound) / anchorFreq, now + (duration * 0.5));
-        sampleSource.playbackRate.linearRampToValueAtTime((targetFreq + varBound) / anchorFreq, now + (duration * 0.75));
-        sampleSource.playbackRate.linearRampToValueAtTime(targetFreq / anchorFreq, now + duration);
+        let oscillationRange = targetFreq * 0.04;
+        osc.frequency.linearRampToValueAtTime(targetFreq + oscillationRange, now + (duration * 0.25));
+        osc.frequency.linearRampToValueAtTime(targetFreq - oscillationRange, now + (duration * 0.5));
+        osc.frequency.linearRampToValueAtTime(targetFreq + oscillationRange, now + (duration * 0.75));
+        osc.frequency.linearRampToValueAtTime(targetFreq, now + duration);
     }
 
-    gainNode.gain.setValueAtTime(vol, now);
+    // Natural Audio Decay Envelope Rules
+    gainNode.gain.setValueAtTime(vol * 0.35, now);
     gainNode.gain.exponentialRampToValueAtTime(0.00001, now + duration);
 
-    sampleSource.connect(gainNode);
+    osc.connect(gainNode);
     gainNode.connect(audioCtx.destination);
     
-    activeOscillators.push(sampleSource);
-    sampleSource.start(now);
-    sampleSource.stop(now + duration);
+    activeOscillators.push(osc);
+    osc.start(now);
+    osc.stop(now + duration);
 }
 
 function triggerMetronomeClick(time) {
@@ -564,10 +495,10 @@ if(bB) bB.onclick = () => setOct('below');
 if(bM) bM.onclick = () => setOct('middle'); 
 if(bA) bA.onclick = () => setOct('above');
 
-// Modern Event Binding Architecture
+// Event Binding Engine with Alt-Modifier Adjustments
 window.addEventListener('keydown', (e) => {
-    // Intercept Ctrl+N / Cmd+N at the VERY TOP so network dropouts cannot freeze it
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
+    // Intercept Alt+N or Ctrl+N to safeguard UX flow cleanly
+    if ((e.ctrlKey || e.altKey || e.metaKey) && e.key.toLowerCase() === 'n') {
         e.preventDefault();
         try { initAudioContext(); } catch(err){}
         handleInput('Ṇ');
@@ -614,7 +545,6 @@ function copyCellContents() {
     textInputSelectionSync(activeAvarthanamIndex, activeCellIndex);
     try {
         navigator.clipboard.writeText(rawContent || "-");
-        console.log("Cell content written directly to native clipboard buffer.");
     } catch (err) {
         document.execCommand('copy');
     }
