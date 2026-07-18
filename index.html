@@ -189,10 +189,16 @@
             <button class="btn gamakam-btn" onclick="applyGamakam('/')">/ (Slide Up)</button>
             <button class="btn gamakam-btn" onclick="applyGamakam('\\')">\ (Slide Down)</button>
             <button class="btn gamakam-btn" onclick="applyGamakam('~')">~ (Kampita)</button>
-            
-            <button class="btn" style="background: #e67e22; color:white; border:none; margin-left: 10px;" onclick="handleBackspace()">Backspace</button>
-            <button class="btn clear-btn" style="margin-left: auto;" onclick="clearActiveCell()">Clear Cell</button>
-            <button class="btn clear-btn" style="background:#ba1414;" onclick="clearAllCells()">Clear All</button>
+        </div>
+
+        <div class="cell-actions-container">
+            <button class="cell-actions-tab" onclick="toggleCellActionsMenu()">⚙️ Cell Actions</button>
+            <div class="cell-actions-panel" id="cellActionsPanel">
+                <button class="btn action-orange" onclick="handleBackspace()">Backspace</button>
+                <button class="btn action-blue" onclick="copyCellContents()">Copy Cell</button>
+                <button class="btn action-gray" onclick="clearActiveCell()">Clear Cell</button>
+                <button class="btn action-red" onclick="clearAllCells()">Clear All</button>
+            </div>
         </div>
 
         <div id="studioWorkspace"></div>
