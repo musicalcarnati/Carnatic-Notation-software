@@ -433,7 +433,7 @@ select, input {
 /* Panel Button Context Coloring Rules */
 .btn.action-orange { background: #e67e22; color: white; border: none; }
 .btn.action-blue { background: #2980b9; color: white; border: none; }
+.btn.action-purple { background: #8e44ad; color: white; border: none; }
 .btn.action-gray { background: #7f8c8d; color: white; border: none; }
 .btn.action-red { background: #c0392b; color: white; border: none; }
 .btn[class^="action-"]:hover { filter: brightness(0.9); }
-.btn.action-purple { background: #8e44ad; color: white; border: none; }
